@@ -112,13 +112,9 @@
         <div id="tab-content">
             <!-- Scheda Catalogo -->
             <div id="catalog-view">
-                <!-- Filtri Categoria -->
+                <!-- Filtri Categoria (Ora popolati dinamicamente) -->
                 <div id="category-filters" class="flex flex-wrap justify-center gap-2 mb-8">
-                    <button class="category-btn" data-filter="offerte">⭐ Offerte</button>
-                    <button class="category-btn active" data-filter="all">Tutti</button>
-                    <button class="category-btn" data-filter="Verdura">Verdura</button>
-                    <button class="category-btn" data-filter="Frutta">Frutta</button>
-                    <button class="category-btn" data-filter="Altro">Altro</button>
+                    <!-- I pulsanti di categoria verranno inseriti qui dal JavaScript -->
                 </div>
 
                 <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
@@ -228,6 +224,7 @@
         const orderNotesTextarea = document.getElementById('order-notes');
         
         const cartSummaryList = document.getElementById('cart-summary-list');
+        const categoryFiltersContainer = document.getElementById('category-filters');
 
         // Riferimenti Modali
         const messageModal = document.getElementById('message-modal');
@@ -322,6 +319,7 @@
                     };
                 }).filter(product => product.name && product.imageUrl && !isNaN(product.price));
 
+                renderCategoryFilters(); // Chiama la nuova funzione per i filtri
                 renderProducts('all');
             } catch (error) {
                 console.error("Errore nel recuperare i dati:", error);
@@ -329,6 +327,43 @@
                                             Errore nel caricare il catalogo.
                                         </div>`;
             }
+        }
+
+        function renderCategoryFilters() {
+            categoryFiltersContainer.innerHTML = '';
+            
+            // Aggiunge i filtri di base
+            const baseFilters = [
+                { name: '⭐ Offerte', value: 'offerte' },
+                { name: 'Tutti', value: 'all' }
+            ];
+
+            const categories = [...new Set(productsData.map(p => p.category))].filter(Boolean).sort();
+            
+            const allFilters = [...baseFilters, ...categories.map(cat => ({ name: cat, value: cat }))];
+
+            allFilters.forEach(filter => {
+                const button = document.createElement('button');
+                button.className = `category-btn`;
+                button.textContent = filter.name;
+                button.dataset.filter = filter.value;
+                categoryFiltersContainer.appendChild(button);
+            });
+            
+            // Imposta il filtro 'Tutti' come attivo di default
+            const allButton = categoryFiltersContainer.querySelector('[data-filter="all"]');
+            if(allButton) {
+                allButton.classList.add('active');
+            }
+
+            // Aggiunge i listener ai nuovi pulsanti
+            categoryFiltersContainer.querySelectorAll('.category-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    document.querySelectorAll('#category-filters .category-btn').forEach(btn => btn.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    renderProducts(e.currentTarget.dataset.filter);
+                });
+            });
         }
 
         function renderProducts(filter = 'all') {
@@ -557,15 +592,6 @@
 
             customerNameInput.addEventListener('input', updateButtonState);
             deliveryAddressInput.addEventListener('input', updateButtonState);
-
-            // Listener per i filtri di categoria
-            document.querySelectorAll('#category-filters .category-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    document.querySelectorAll('#category-filters .category-btn').forEach(btn => btn.classList.remove('active'));
-                    e.currentTarget.classList.add('active');
-                    renderProducts(e.currentTarget.dataset.filter);
-                });
-            });
         });
     </script>
 </body>
