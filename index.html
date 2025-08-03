@@ -113,7 +113,7 @@
             <!-- Carrello a destra -->
             <button id="header-cart-btn" class="text-center w-24 sm:w-32 flex-shrink-0 relative">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 11-4 0 2 2 0 014 0z" />
                 </svg>
                 <span id="cart-indicator" class="absolute top-0 right-6 sm:right-10 w-3 h-3 bg-red-500 rounded-full hidden"></span>
             </button>
@@ -569,7 +569,7 @@
         }
 
         function generateWhatsAppOrder() {
-             let hasItems = false;
+            let hasItems = false;
             for (const productId in cart) {
                 if (cart[productId].quantity > 0) {
                     hasItems = true;
@@ -620,20 +620,20 @@
             
             const encodedOrderText = encodeURIComponent(orderText);
             const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedOrderText}`;
+            
+            // Apri WhatsApp in una nuova scheda. Questo non viene bloccato perché è un'azione diretta dell'utente.
             window.open(whatsappUrl, '_blank');
         }
 
-        async function saveOrderToSheet() {
+        async function sendOrderToAppsScript() {
             if (APPS_SCRIPT_URL === '') {
-                showMessage("L'URL dello script di Google Apps non è configurato. L'ordine verrà inviato solo via WhatsApp.");
-                generateWhatsAppOrder();
+                // Se l'URL non è configurato, non fare nulla.
                 return;
             }
 
             const hasItems = Object.values(cart).some(item => item.quantity > 0);
             if (!hasItems) {
-                showMessage('Il carrello è vuoto! Seleziona almeno un prodotto dal catalogo.');
-                switchTab('catalog');
+                // Non salvare se il carrello è vuoto
                 return;
             }
 
@@ -671,31 +671,21 @@
                 }
             }
             
-            // Messaggio di caricamento
-            whatsappOrderBtn.disabled = true;
-            whatsappOrderBtn.textContent = 'Salvataggio in corso...';
-            
             try {
+                // La chiamata fetch avviene in background e non ha bisogno di essere attesa
                 const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Necessario per Google Apps Script
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(orderDetails),
                 });
                 
-                // Google Apps Script restituisce una risposta opaca, non possiamo leggerla.
-                // Gestiamo il successo e poi l'invio su WhatsApp.
-                showMessage('Ordine salvato con successo! Ora sarai reindirizzato a WhatsApp per l\'invio del messaggio.');
-                setTimeout(generateWhatsAppOrder, 2000); // Ritardo per mostrare il messaggio di successo
+                // Nota: con mode: 'no-cors', la risposta non è accessibile,
+                // quindi non possiamo verificare il successo, ma il browser invierà la richiesta.
             } catch (error) {
                 console.error("Errore nel salvataggio dell'ordine:", error);
-                showMessage('Si è verificato un errore durante il salvataggio dell\'ordine. L\'ordine non è stato salvato, ma puoi comunque inviare il messaggio WhatsApp.');
-                generateWhatsAppOrder();
-            } finally {
-                whatsappOrderBtn.disabled = false;
-                whatsappOrderBtn.textContent = 'Invia Ordine via WhatsApp';
             }
         }
 
@@ -721,7 +711,11 @@
             checkoutTabBtn.addEventListener('click', () => switchTab('checkout'));
             headerCartBtn.addEventListener('click', showCartSummary);
             
-            whatsappOrderBtn.addEventListener('click', saveOrderToSheet);
+            // Listener modificato: ora chiama due funzioni, una per WhatsApp e una per lo script in background.
+            whatsappOrderBtn.addEventListener('click', () => {
+                generateWhatsAppOrder();
+                sendOrderToAppsScript();
+            });
             
             // Gestione del form di checkout
             deliveryOptionSelect.addEventListener('change', (e) => {
