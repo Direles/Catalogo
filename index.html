@@ -155,15 +155,15 @@
                     
                     <div class="space-y-4">
                         <div>
-                            <label for="customer-name" class="block text-gray-700 font-bold mb-2">Il tuo Nome:</label>
-                            <input type="text" id="customer-name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Es. Mario Rossi">
-                        </div>
-                        
-                        <div>
                             <label for="customer-phone" class="block text-gray-700 font-bold mb-2">Il tuo numero di telefono:</label>
                             <input type="tel" id="customer-phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Es. 3451234567">
                         </div>
 
+                        <div>
+                            <label for="customer-name" class="block text-gray-700 font-bold mb-2">Il tuo Nome:</label>
+                            <input type="text" id="customer-name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Es. Mario Rossi">
+                        </div>
+                        
                         <div>
                             <label for="delivery-option" class="block text-gray-700 font-bold mb-2">Modalità di Consegna:</label>
                             <select id="delivery-option" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
@@ -688,6 +688,48 @@
                 console.error("Errore nel salvataggio dell'ordine:", error);
             }
         }
+        
+        async function fetchCustomerByPhone(phone) {
+            if (!phone) {
+                customerNameInput.value = '';
+                // NEW: Clear the address field if the phone number is empty
+                deliveryAddressInput.value = '';
+                return;
+            }
+            
+            try {
+                const apiUrl = `${APPS_SCRIPT_URL}?phone=${encodeURIComponent(phone)}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (data && data.name) {
+                    customerNameInput.value = data.name;
+                    // NEW: Populate the address field with the retrieved data
+                    if (data.address) {
+                        deliveryAddressInput.value = data.address;
+                        deliveryOptionSelect.value = 'Consegna a domicilio';
+                        addressField.classList.remove('hidden');
+                    } else {
+                        deliveryAddressInput.value = '';
+                        deliveryOptionSelect.value = 'Ritiro in azienda';
+                        addressField.classList.add('hidden');
+                    }
+                } else {
+                    customerNameInput.value = '';
+                    deliveryAddressInput.value = '';
+                    deliveryOptionSelect.value = 'Ritiro in azienda';
+                    addressField.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error("Errore nel recupero dei dati cliente:", error);
+                customerNameInput.value = '';
+                deliveryAddressInput.value = '';
+                deliveryOptionSelect.value = 'Ritiro in azienda';
+                addressField.classList.add('hidden');
+            } finally {
+                updateButtonState();
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchProducts();
@@ -724,8 +766,21 @@
             });
 
             customerNameInput.addEventListener('input', updateButtonState);
-            customerPhoneInput.addEventListener('input', updateButtonState);
             deliveryAddressInput.addEventListener('input', updateButtonState);
+
+            // NUOVO LISTENER: ricerca il cliente quando viene inserito il numero di telefono
+            customerPhoneInput.addEventListener('input', () => {
+                const phone = customerPhoneInput.value.trim();
+                if (phone.length >= 8) { // Esegui la ricerca solo se il numero è abbastanza lungo
+                    fetchCustomerByPhone(phone);
+                } else {
+                    customerNameInput.value = ''; // Pulisci il nome e l'indirizzo se il numero è troppo corto
+                    deliveryAddressInput.value = '';
+                    deliveryOptionSelect.value = 'Ritiro in azienda';
+                    addressField.classList.add('hidden');
+                    updateButtonState();
+                }
+            });
         });
     </script>
 </body>
