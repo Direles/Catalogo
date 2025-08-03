@@ -63,17 +63,35 @@
         .qty-selector-btn:hover {
             background-color: #cbd5e1;
         }
-        .category-btn {
+        .filter-btn {
             padding: 0.5rem 1rem;
             border-radius: 9999px;
             font-weight: 600;
             transition: all 0.2s ease-in-out;
             background-color: #e2e8f0;
             color: #4A5568;
+            cursor: pointer;
         }
-        .category-btn.active {
+        .filter-btn.active {
             background-color: #118AB2;
             color: white;
+        }
+        .dropdown-menu {
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+        .dropdown-menu .filter-btn {
+            border-radius: 0;
+            text-align: left;
+            width: 100%;
+        }
+        #checkout-tab-btn {
+            border-left: 1px solid #E2E8F0;
         }
     </style>
 </head>
@@ -97,13 +115,25 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                 <span id="cart-indicator" class="absolute top-0 right-6 sm:right-10 w-3 h-3 bg-red-500 rounded-full hidden"></span>
+                <span id="cart-indicator" class="absolute top-0 right-6 sm:right-10 w-3 h-3 bg-red-500 rounded-full hidden"></span>
             </button>
         </div>
-        <!-- Parte Inferiore: Selettore TAB -->
-        <div class="w-full flex border-t border-gray-200">
-            <button id="catalog-tab-btn" class="tab-full active">1. Catalogo</button>
-            <button id="checkout-tab-btn" class="tab-full">2. Ordina</button>
+
+        <!-- Parte Inferiore: Selettore TAB e Filtri -->
+        <div class="w-full flex justify-between items-center bg-gray-50 border-t border-gray-200">
+            <div class="flex-grow flex items-center justify-start border-r border-gray-200">
+                <button id="catalog-tab-btn" class="tab-full active">1. Catalogo</button>
+                <button id="filter-offerte" class="filter-btn text-sm ml-2">⭐ Offerte</button>
+                <div class="relative ml-2">
+                    <button id="filter-all-dropdown-btn" class="filter-btn text-sm">
+                        Tutti <span id="category-dropdown-arrow">▼</span>
+                    </button>
+                    <div id="category-dropdown-menu" class="absolute dropdown-menu hidden z-10 w-48">
+                        <!-- Le categorie verranno inserite qui dinamicamente dal JavaScript -->
+                    </div>
+                </div>
+            </div>
+            <button id="checkout-tab-btn" class="tab-full flex-shrink-0">2. Ordina</button>
         </div>
     </header>
 
@@ -112,11 +142,7 @@
         <div id="tab-content">
             <!-- Scheda Catalogo -->
             <div id="catalog-view">
-                <!-- Filtri Categoria (Ora popolati dinamicamente) -->
-                <div id="category-filters" class="flex flex-wrap justify-center gap-2 mb-8">
-                    <!-- I pulsanti di categoria verranno inseriti qui dal JavaScript -->
-                </div>
-
+                <!-- La griglia dei prodotti non ha più bisogno dei filtri qui -->
                 <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                     <!-- I prodotti verranno inseriti qui dal JavaScript -->
                 </div>
@@ -216,6 +242,10 @@
         const checkoutTabBtn = document.getElementById('checkout-tab-btn');
         const catalogView = document.getElementById('catalog-view');
         const checkoutView = document.getElementById('checkout-view');
+        
+        const filterOfferteBtn = document.getElementById('filter-offerte');
+        const filterAllDropdownBtn = document.getElementById('filter-all-dropdown-btn');
+        const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
 
         const customerNameInput = document.getElementById('customer-name');
         const deliveryOptionSelect = document.getElementById('delivery-option');
@@ -224,7 +254,6 @@
         const orderNotesTextarea = document.getElementById('order-notes');
         
         const cartSummaryList = document.getElementById('cart-summary-list');
-        const categoryFiltersContainer = document.getElementById('category-filters');
 
         // Riferimenti Modali
         const messageModal = document.getElementById('message-modal');
@@ -304,7 +333,6 @@
                     row.split(',').map(cell => cell.replace(/^"|"$/g, ''))
                 );
                 
-                // Aggiornato per usare le tue intestazioni di colonna
                 productsData = rows.slice(1).map(row => {
                     return {
                         id: row[0],
@@ -319,7 +347,7 @@
                     };
                 }).filter(product => product.name && product.imageUrl && !isNaN(product.price));
 
-                renderCategoryFilters(); // Chiama la nuova funzione per i filtri
+                setupDynamicFilters();
                 renderProducts('all');
             } catch (error) {
                 console.error("Errore nel recuperare i dati:", error);
@@ -329,47 +357,62 @@
             }
         }
 
-        function renderCategoryFilters() {
-            categoryFiltersContainer.innerHTML = '';
+        function setupDynamicFilters() {
+            // Pulisce il menu a tendina
+            categoryDropdownMenu.innerHTML = '';
             
-            // Aggiunge i filtri di base
-            const baseFilters = [
-                { name: '⭐ Offerte', value: 'offerte' },
-                { name: 'Tutti', value: 'all' }
-            ];
-
+            // Ottiene le categorie uniche e le ordina
             const categories = [...new Set(productsData.map(p => p.category))].filter(Boolean).sort();
             
-            const allFilters = [...baseFilters, ...categories.map(cat => ({ name: cat, value: cat }))];
-
-            allFilters.forEach(filter => {
+            categories.forEach(category => {
                 const button = document.createElement('button');
-                button.className = `category-btn`;
-                button.textContent = filter.name;
-                button.dataset.filter = filter.value;
-                categoryFiltersContainer.appendChild(button);
+                button.className = `filter-btn`;
+                button.textContent = category;
+                button.dataset.filter = category;
+                categoryDropdownMenu.appendChild(button);
+            });
+
+            // Listener per il pulsante "Tutti"
+            filterAllDropdownBtn.addEventListener('click', (e) => {
+                categoryDropdownMenu.classList.toggle('hidden');
+                document.getElementById('category-dropdown-arrow').textContent = categoryDropdownMenu.classList.contains('hidden') ? '▼' : '▲';
+                renderProducts('all'); // Visualizza tutti i prodotti quando si apre il menu
             });
             
-            // Imposta il filtro 'Tutti' come attivo di default
-            const allButton = categoryFiltersContainer.querySelector('[data-filter="all"]');
-            if(allButton) {
-                allButton.classList.add('active');
-            }
-
-            // Aggiunge i listener ai nuovi pulsanti
-            categoryFiltersContainer.querySelectorAll('.category-btn').forEach(button => {
+            // Listener per il pulsante "Offerte"
+            filterOfferteBtn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                filterOfferteBtn.classList.add('active');
+                renderProducts('offerte');
+            });
+            
+            // Listener per i pulsanti nel menu a tendina
+            categoryDropdownMenu.querySelectorAll('.filter-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
-                    document.querySelectorAll('#category-filters .category-btn').forEach(btn => btn.classList.remove('active'));
-                    e.currentTarget.classList.add('active');
-                    renderProducts(e.currentTarget.dataset.filter);
+                    const filter = e.currentTarget.dataset.filter;
+                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                    filterAllDropdownBtn.classList.add('active');
+                    categoryDropdownMenu.classList.add('hidden'); // Chiude il menu
+                    document.getElementById('category-dropdown-arrow').textContent = '▼';
+                    renderProducts(filter);
                 });
             });
+
+            // Listener per chiudere il menu a tendina cliccando fuori
+            document.addEventListener('click', (e) => {
+                if (!filterAllDropdownBtn.contains(e.target) && !categoryDropdownMenu.contains(e.target)) {
+                    categoryDropdownMenu.classList.add('hidden');
+                    document.getElementById('category-dropdown-arrow').textContent = '▼';
+                }
+            });
+
+            // Imposta "Tutti" come filtro attivo di default all'avvio
+            filterAllDropdownBtn.classList.add('active');
         }
 
         function renderProducts(filter = 'all') {
             productsGrid.innerHTML = '';
             
-            // Filtro i prodotti in base alla disponibilità e al filtro di categoria
             let filteredProducts;
             if (filter === 'all') {
                 filteredProducts = productsData.filter(p => p.status === 'disponibile');
@@ -377,6 +420,14 @@
                 filteredProducts = productsData.filter(p => p.offer && p.status === 'disponibile');
             } else {
                 filteredProducts = productsData.filter(p => p.category === filter && p.status === 'disponibile');
+            }
+            
+            // Aggiorna lo stato attivo dei pulsanti (per "offerte" e "tutti")
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            if(filter === 'offerte') {
+                filterOfferteBtn.classList.add('active');
+            } else {
+                filterAllDropdownBtn.classList.add('active');
             }
 
             filteredProducts.forEach((product) => {
