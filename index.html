@@ -67,32 +67,38 @@
         // ID univoco del foglio Google.
         const SPREADSHEET_ID = '1-JyDl2ahO9bqzbOgUT3N9aDIKJ5sKRhwJThsFlH38DY';
         const SHEET_NAME = 'Prodotti'; // Nome della scheda da cui leggere i dati
-        const API_KEY = ''; // Lascia vuoto, verrà fornita automaticamente dall'ambiente Canvas
+        const WHATSAPP_NUMBER = 'TUO_NUMERO_WHATSAPP'; // Inserisci qui il tuo numero di telefono completo di prefisso internazionale (es. +393391234567)
         
         let cart = {}; // Carrello per l'ordine
         const productList = document.getElementById('product-list');
 
-        // IMPORTANTE: affinché questa chiamata API funzioni, devi rendere il tuo foglio Google "Pubblico"
-        // Vai su "Condividi" nel foglio, clicca su "Generale" e cambia da "Con restrizioni" a "Chiunque abbia il link".
         async function fetchProducts() {
-            const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}!A2:G?key=${API_KEY}`;
+            // Utilizziamo un endpoint di Google Sheets che non richiede una chiave API,
+            // purché il foglio sia "pubblico". L'output è in formato CSV.
+            const apiUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
             try {
                 const response = await fetch(apiUrl);
                 if (!response.ok) {
                     throw new Error(`Errore di rete: ${response.statusText}`);
                 }
-                const data = await response.json();
-                renderProducts(data.values);
+                const csvText = await response.text();
+                // Analizziamo il testo CSV in un array di array
+                const rows = csvText.split('\n').map(row => 
+                    row.split(',').map(cell => cell.replace(/^"|"$/g, ''))
+                );
+                // Saltiamo la prima riga (le intestazioni) e passiamo i dati al render
+                const productsData = rows.slice(1);
+                renderProducts(productsData);
             } catch (error) {
                 console.error("Errore nel recuperare i dati:", error);
                 productList.innerHTML = `<div class="col-span-full text-center text-red-500 p-8">
-                                            Errore nel caricare il catalogo. Controlla le autorizzazioni del foglio o l'ID.
+                                            Errore nel caricare il catalogo. Controlla le autorizzazioni del foglio, l'ID o il nome della scheda.
                                         </div>`;
             }
         }
 
         function renderProducts(productsData) {
-            if (!productsData || productsData.length === 0) {
+            if (!productsData || productsData.length === 0 || productsData[0].length < 7) {
                 productList.innerHTML = `<div class="col-span-full text-center text-gray-500 p-8">Nessun prodotto disponibile.</div>`;
                 return;
             }
@@ -169,7 +175,7 @@
             });
             whatsappMessage += `\n*Note:*\n${orderNotes}`;
             
-            const whatsappUrl = `https://wa.me/TUO_NUMERO_WHATSAPP?text=${encodeURIComponent(whatsappMessage)}`;
+            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`;
             window.open(whatsappUrl, '_blank');
             orderModal.classList.add('hidden');
             cart = {}; // Resetta il carrello dopo l'invio
