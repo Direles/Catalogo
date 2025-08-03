@@ -625,6 +625,9 @@
             window.open(whatsappUrl, '_blank');
         }
 
+        /**
+         * Invia i dati dell'ordine allo script di Google Apps in background.
+         */
         async function sendOrderToAppsScript() {
             if (APPS_SCRIPT_URL === '') {
                 // Se l'URL non è configurato, non fare nulla.
@@ -637,7 +640,6 @@
                 return;
             }
 
-            // Otteniamo i dati dell'ordine
             const customerName = customerNameInput.value.trim();
             const customerPhone = customerPhoneInput.value.trim();
             const deliveryOption = deliveryOptionSelect.value;
@@ -689,10 +691,14 @@
             }
         }
         
+        /**
+         * Cerca un cliente nel database tramite il numero di telefono e precompila i campi del form.
+         * @param {string} phone - Il numero di telefono da cercare.
+         */
         async function fetchCustomerByPhone(phone) {
             if (!phone) {
                 customerNameInput.value = '';
-                // NEW: Clear the address field if the phone number is empty
+                // Pulisce anche l'indirizzo
                 deliveryAddressInput.value = '';
                 return;
             }
@@ -704,17 +710,18 @@
                 
                 if (data && data.name) {
                     customerNameInput.value = data.name;
-                    // NEW: Populate the address field with the retrieved data
                     if (data.address) {
                         deliveryAddressInput.value = data.address;
                         deliveryOptionSelect.value = 'Consegna a domicilio';
                         addressField.classList.remove('hidden');
                     } else {
+                        // Se non c'è indirizzo, resetta i campi
                         deliveryAddressInput.value = '';
                         deliveryOptionSelect.value = 'Ritiro in azienda';
                         addressField.classList.add('hidden');
                     }
                 } else {
+                    // Se il cliente non viene trovato, resetta i campi
                     customerNameInput.value = '';
                     deliveryAddressInput.value = '';
                     deliveryOptionSelect.value = 'Ritiro in azienda';
@@ -722,6 +729,7 @@
                 }
             } catch (error) {
                 console.error("Errore nel recupero dei dati cliente:", error);
+                // In caso di errore, pulisci i campi per evitare dati errati
                 customerNameInput.value = '';
                 deliveryAddressInput.value = '';
                 deliveryOptionSelect.value = 'Ritiro in azienda';
@@ -771,7 +779,8 @@
             // NUOVO LISTENER: ricerca il cliente quando viene inserito il numero di telefono
             customerPhoneInput.addEventListener('input', () => {
                 const phone = customerPhoneInput.value.trim();
-                if (phone.length >= 8) { // Esegui la ricerca solo se il numero è abbastanza lungo
+                // Esegui la ricerca solo se l'URL dello script è configurato
+                if (APPS_SCRIPT_URL !== '' && phone.length >= 8) { 
                     fetchCustomerByPhone(phone);
                 } else {
                     customerNameInput.value = ''; // Pulisci il nome e l'indirizzo se il numero è troppo corto
