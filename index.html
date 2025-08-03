@@ -3,431 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catalogo L'Orto Sotto Casa</title>
+    <title>Allegofattore: Catalogo Online</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #F8F9FA;
-            color: #073B4C;
-            padding-top: 220px; 
+            font-family: 'Inter', sans-serif;
         }
-        .text-brand-primary { color: #118AB2; }
-        
-        .product-card-interactive {
-            position: relative;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            overflow: hidden;
-        }
-        .product-card-interactive:not(.opacity-50):hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .tilt-left { transform: rotateZ(-5deg); }
-        .tilt-right { transform: rotateZ(5deg); }
-        .product-card-interactive.tilt-left,
-        .product-card-interactive.tilt-right { transition: transform 0.15s ease-out; }
-        .product-image-circle {
-            width: 96px; height: 96px; border-radius: 50%; object-fit: cover;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .tab-full {
-            width: 50%;
-            padding: 1rem 0;
-            font-weight: 700;
-            text-align: center;
-            color: #4A5568;
-            background-color: #F8F9FA;
-            transition: all 0.2s ease-in-out;
-            border-bottom: 3px solid transparent;
-        }
-        .tab-full.active {
-            color: #118AB2;
-            background-color: white;
-            border-bottom-color: #118AB2;
-        }
-        #catalog-tab-btn {
-            border-right: 1px solid #E2E8F0;
-        }
-        
-        .modal-overlay { background-color: rgba(0, 0, 0, 0.6); }
-        .modal-content {
-            background-color: white; border-radius: 0.75rem; padding: 1.5rem;
-            max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        .bg-custom-gradient {
+            background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="bg-gray-100 antialiased">
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <!-- Header -->
+        <header class="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-6 md:mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-2">Allegofattore</h1>
+            <p class="text-center text-gray-600">Catalogo Online</p>
+        </header>
 
-    <!-- Header Fisso Unico -->
-    <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md flex flex-col items-center">
-        <!-- Parte Superiore: Logo e Carrello -->
-        <div class="w-full flex justify-between items-center p-2" style="height: 160px;">
-            <!-- Spazio vuoto a sinistra per bilanciamento -->
-            <div class="w-24 sm:w-32 flex-shrink-0"></div>
-            
-            <!-- Logo e Slogan al centro -->
-            <div class="flex flex-col items-center">
-                <img src="https://i.ibb.co/1fYLcQbx/Tavola-disegno-1.png" alt="Logo Allegro Fattore" class="h-28 sm:h-32 w-auto object-contain">
-                <p class="text-md sm:text-lg font-bold text-gray-700 -mt-2">L'ORTO SOTTO CASA</p>
-            </div>
-            
-            <!-- Carrello a destra -->
-            <div id="header-cart" class="text-center w-24 sm:w-32 flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <p class="text-base sm:text-lg font-bold text-brand-primary"><span id="header-cart-total">0.00€</span></p>
-            </div>
-        </div>
-        <!-- Parte Inferiore: Selettore TAB -->
-        <div class="w-full flex border-t border-gray-200">
-            <button id="catalog-tab-btn" class="tab-full active">1. Catalogo</button>
-            <button id="checkout-tab-btn" class="tab-full">2. Ordina</button>
-        </div>
-    </header>
+        <!-- Catalogo Prodotti -->
+        <main id="product-list" class="grid gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <!-- I prodotti verranno caricati qui dinamicamente dal foglio Google -->
+        </main>
 
-    <main class="flex-grow container mx-auto p-4 md:p-8">
-        <!-- CONTENUTO DEI TAB -->
-        <div id="tab-content">
-            <!-- Scheda Catalogo -->
-            <div id="catalog-view">
-                <p class="text-center mb-8 text-md md:text-lg max-w-2xl mx-auto text-gray-700">
-                    Aggiungi o rimuovi prodotti cliccando sui simboli (+) o (-). Clicca sull'icona (📄) per i dettagli.
-                </p>
-                <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                    <!-- I prodotti verranno inseriti qui dal JavaScript -->
-                </div>
-            </div>
-
-            <!-- Scheda Checkout -->
-            <div id="checkout-view" class="hidden">
-                 <div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
-                    <h2 class="text-2xl font-bold text-center mb-6 text-brand-primary">Dati per la Consegna e Pagamento</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label for="customer-name" class="block text-gray-700 font-bold mb-2">Il tuo Nome:</label>
-                            <input type="text" id="customer-name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Es. Mario Rossi">
+        <!-- Modale per l'ordine -->
+        <div id="order-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Riepilogo Ordine</h3>
+                    <div id="order-summary" class="mb-4 text-left"></div>
+                    <form id="order-form" class="mt-2">
+                        <div class="mb-4">
+                            <label for="customer-name" class="block text-sm font-medium text-gray-700 text-left">Il tuo nome</label>
+                            <input type="text" id="customer-name" name="customer-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
                         </div>
-                        
-                        <div>
-                            <label for="delivery-option" class="block text-gray-700 font-bold mb-2">Modalità di Consegna:</label>
-                            <select id="delivery-option" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="Ritiro in azienda">Ritiro in azienda</option>
-                                <option value="Consegna a domicilio">Consegna a domicilio</option>
-                            </select>
+                        <div class="mb-4">
+                            <label for="customer-phone" class="block text-sm font-medium text-gray-700 text-left">Numero di telefono</label>
+                            <input type="tel" id="customer-phone" name="customer-phone" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2">
                         </div>
-
-                        <div id="address-field" class="hidden">
-                            <label for="delivery-address" class="block text-gray-700 font-bold mb-2">Indirizzo di Consegna:</label>
-                            <input type="text" id="delivery-address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Via, numero civico, città">
+                        <div class="mb-4">
+                            <label for="order-notes" class="block text-sm font-medium text-gray-700 text-left">Note (opzionale)</label>
+                            <textarea id="order-notes" name="order-notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2"></textarea>
                         </div>
-
-                        <div>
-                            <label for="payment-method" class="block text-gray-700 font-bold mb-2">Metodo di Pagamento:</label>
-                            <select id="payment-method" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="Pagamento Digitale Anticipato">Pagamento Digitale Anticipato</option>
-                                <option value="Contanti alla Consegna">Contanti alla Consegna</option>
-                            </select>
-                        </div>
-                        
-                        <div class="pt-6 text-center">
-                             <button id="whatsapp-order-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-600 transition duration-300 ease-in-out w-full disabled:opacity-50 disabled:cursor-not-allowed">
-                                Invia Ordine via WhatsApp
+                        <div class="items-center px-4 py-3">
+                            <button type="submit" class="w-full rounded-md bg-green-500 text-white py-2 px-4 shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                Invia Ordine su WhatsApp
                             </button>
-                            <p class="text-sm text-gray-600 text-center pt-4">Il pulsante si attiverà dopo aver compilato i campi richiesti.</p>
                         </div>
-                    </div>
+                    </form>
+                    <button id="close-modal" class="mt-4 w-full rounded-md bg-gray-200 text-gray-700 py-2 px-4 shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-colors">
+                        Annulla
+                    </button>
                 </div>
             </div>
-        </div>
-    </main>
-
-    <!-- Modale per Messaggi -->
-    <div id="message-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 hidden">
-        <div class="modal-content">
-            <p id="modal-message" class="text-lg mb-6"></p>
-            <button id="modal-close-btn" class="modal-close-btn">OK</button>
         </div>
     </div>
     
-    <!-- Modale per Dettagli Prodotto -->
-    <div id="product-detail-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 hidden">
-        <div class="modal-content relative max-w-md w-full">
-            <button id="product-detail-close-btn" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <img id="modal-product-image" src="" alt="Immagine prodotto" class="w-full h-64 object-cover rounded-lg mb-4">
-            <p id="modal-product-description" class="text-gray-700"></p>
-        </div>
-    </div>
-
-
     <script>
-        const WHATSAPP_NUMBER = '3927063209';
-
-        const products = [
-            { id: 'carrube', name: 'Carrube', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/ccgs9CWP/13-1.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'pomodori', name: 'Pomodori Datterini', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/h1BxBStx/67.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'peperoni', name: 'Peperoni', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/Q3RTzkhQ/59.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'patate', name: 'Patate', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/MDBTW6P8/57.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'melanzane', name: 'Melanzane', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/JFvJjLC2/50.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'lattuga', name: 'Lattuga', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/1t4hrYtd/39.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'uova', name: 'Uova', price: 1.00, unit: 'dozzina', image: 'https://i.ibb.co/ycLD2twC/85.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'cipolle', name: 'Cipolle', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/bgNFq1Yn/26.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'cavolo_cappuccio', name: 'Cavolo Cappuccio', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/tp1khNv1/19.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'carote', name: 'Carote', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/tp3v0j8R/12.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'broccoli', name: 'Broccoli', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/93WckFF7/10.jpg', description: 'Prova descrizione.', status: 'available' },
-            { id: 'limoni', name: 'Limoni', price: 1.00, unit: 'kg', image: 'https://i.ibb.co/TBKCDnsk/42.jpg', description: 'Prova descrizione.', status: 'available' }
-        ];
-
-        let cart = {};
-
-        // Riferimenti elementi DOM
-        const productsGrid = document.getElementById('products-grid');
-        const cartTotalSpan = document.getElementById('header-cart-total');
-        const whatsappOrderBtn = document.getElementById('whatsapp-order-btn');
+    document.addEventListener('DOMContentLoaded', () => {
+        // ID univoco del foglio Google.
+        const SPREADSHEET_ID = '1-JyDl2ahO9bqzbOgUT3N9aDIKJ5sKRhwJThsFlH38DY';
+        const SHEET_NAME = 'Prodotti'; // Nome della scheda da cui leggere i dati
+        const API_KEY = ''; // Lascia vuoto, verrà fornita automaticamente dall'ambiente Canvas
         
-        const catalogTabBtn = document.getElementById('catalog-tab-btn');
-        const checkoutTabBtn = document.getElementById('checkout-tab-btn');
-        const catalogView = document.getElementById('catalog-view');
-        const checkoutView = document.getElementById('checkout-view');
+        let cart = {}; // Carrello per l'ordine
+        const productList = document.getElementById('product-list');
 
-        const customerNameInput = document.getElementById('customer-name');
-        const deliveryOptionSelect = document.getElementById('delivery-option');
-        const addressField = document.getElementById('address-field');
-        const deliveryAddressInput = document.getElementById('delivery-address');
-        const paymentMethodSelect = document.getElementById('payment-method');
-
-        // Riferimenti Modali
-        const messageModal = document.getElementById('message-modal');
-        const productDetailModal = document.getElementById('product-detail-modal');
-
-        function showMessage(message) {
-            messageModal.querySelector('#modal-message').textContent = message;
-            messageModal.classList.remove('hidden');
-        }
-
-        function hideMessage() {
-            messageModal.classList.add('hidden');
-        }
-        
-        function showProductDetails(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            productDetailModal.querySelector('#modal-product-image').src = product.image;
-            productDetailModal.querySelector('#modal-product-description').textContent = product.description;
-            productDetailModal.classList.remove('hidden');
-        }
-
-        function hideProductDetails() {
-            productDetailModal.classList.add('hidden');
-        }
-
-        function switchTab(tabToShow) {
-            catalogView.classList.add('hidden');
-            checkoutView.classList.add('hidden');
-            catalogTabBtn.classList.remove('active');
-            checkoutTabBtn.classList.remove('active');
-
-            if (tabToShow === 'checkout') {
-                checkoutView.classList.remove('hidden');
-                checkoutTabBtn.classList.add('active');
-            } else {
-                catalogView.classList.remove('hidden');
-                catalogTabBtn.classList.add('active');
+        // IMPORTANTE: affinché questa chiamata API funzioni, devi rendere il tuo foglio Google "Pubblico"
+        // Vai su "Condividi" nel foglio, clicca su "Generale" e cambia da "Con restrizioni" a "Chiunque abbia il link".
+        async function fetchProducts() {
+            const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}!A2:G?key=${API_KEY}`;
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`Errore di rete: ${response.statusText}`);
+                }
+                const data = await response.json();
+                renderProducts(data.values);
+            } catch (error) {
+                console.error("Errore nel recuperare i dati:", error);
+                productList.innerHTML = `<div class="col-span-full text-center text-red-500 p-8">
+                                            Errore nel caricare il catalogo. Controlla le autorizzazioni del foglio o l'ID.
+                                        </div>`;
             }
         }
 
-        function renderProducts() {
-            productsGrid.innerHTML = '';
-            products.forEach(product => {
-                const isAvailable = product.status === 'available';
-                const currentQuantity = cart[product.id] || 0;
-                const subtotal = (currentQuantity * product.price).toFixed(2);
-                const productCard = document.createElement('div');
-                productCard.className = `product-card-interactive bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center ${!isAvailable ? 'opacity-50' : ''}`;
-                productCard.dataset.id = product.id;
-                productCard.innerHTML = `
-                    ${!isAvailable ? '<div class="absolute inset-0 flex items-center justify-center bg-gray-200 bg-opacity-75 rounded-lg z-30"><span class="text-2xl font-bold text-gray-700 uppercase">ULTIMATO</span></div>' : ''}
-                    
-                    <button class="qty-btn absolute top-1 left-1 z-20 p-2 rounded-full hover:bg-gray-200 transition-colors" data-action="decrease">
-                        <span class="text-2xl font-black text-red-500">-</span>
-                    </button>
-                    <button class="qty-btn absolute top-1 right-1 z-20 p-2 rounded-full hover:bg-gray-200 transition-colors" data-action="increase">
-                        <span class="text-2xl font-black text-green-500">+</span>
-                    </button>
-
-                    <img src="${product.image}" alt="${product.name}" class="product-image-circle mb-4 relative z-10">
-                    <h3 class="text-xl font-bold mb-1 z-10">${product.name}</h3>
-                    <div class="flex justify-center items-center gap-2 mb-2 z-10">
-                        <p class="text-lg font-semibold text-brand-primary">${product.price.toFixed(2)}€ / ${product.unit}</p>
-                        <button class="info-btn p-1" data-product-id="${product.id}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 hover:text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div id="product-summary-${product.id}" class="quantity-info relative z-10 ${currentQuantity === 0 ? 'hidden' : ''}">
-                        <span>Q.tà: <span class="font-bold">${currentQuantity}</span></span>
-                        <span>Tot: <span class="font-bold">${subtotal}€</span></span>
-                    </div>
-                `;
-                productsGrid.appendChild(productCard);
-            });
-            addCardEventListeners();
-        }
-        
-        function addCardEventListeners() {
-            // Listener per i pulsanti +/-
-            productsGrid.querySelectorAll('.qty-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const productCard = e.currentTarget.closest('.product-card-interactive');
-                    if (!productCard) return;
-
-                    const productId = productCard.dataset.id;
-                    const product = products.find(p => p.id === productId);
-                    if (!product || product.status !== 'available') return;
-
-                    let currentQuantity = cart[productId] || 0;
-                    const action = e.currentTarget.dataset.action;
-                    
-                    if (action === 'increase') {
-                        currentQuantity++;
-                        productCard.classList.add('tilt-right');
-                    } else if (action === 'decrease') {
-                        currentQuantity = Math.max(0, currentQuantity - 1);
-                        productCard.classList.add('tilt-left');
-                    }
-                    updateCart(productId, currentQuantity);
-                    
-                    const productSummaryDiv = document.getElementById(`product-summary-${productId}`);
-                    if (productSummaryDiv) {
-                        const subtotal = (currentQuantity * product.price).toFixed(2);
-                        productSummaryDiv.innerHTML = `<span>Q.tà: <span class="font-bold">${currentQuantity}</span></span><span>Tot: <span class="font-bold">${subtotal}€</span></span>`;
-                        productSummaryDiv.classList.toggle('hidden', currentQuantity === 0);
-                    }
-                    setTimeout(() => productCard.classList.remove('tilt-left', 'tilt-right'), 150);
-                });
-            });
-
-            // Listener per il pulsante info
-            productsGrid.querySelectorAll('.info-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    showProductDetails(e.currentTarget.dataset.productId);
-                });
-            });
-        }
-
-        function updateCart(productId, quantity) {
-            if (quantity > 0) cart[productId] = quantity;
-            else delete cart[productId];
-            updateCartDisplay();
-        }
-
-        function updateCartDisplay() {
-            let total = 0;
-            for (const productId in cart) {
-                const product = products.find(p => p.id === productId);
-                if (product) total += cart[productId] * product.price;
-            }
-            cartTotalSpan.textContent = `${total.toFixed(2)}€`;
-        }
-
-        function validateForm() {
-            const nameFilled = customerNameInput.value.trim() !== '';
-            const delivery = deliveryOptionSelect.value;
-            const addressFilled = deliveryAddressInput.value.trim() !== '';
-
-            if (!nameFilled) return false;
-            if (delivery === 'Consegna a domicilio' && !addressFilled) return false;
-            
-            return true;
-        }
-
-        function updateButtonState() {
-            whatsappOrderBtn.disabled = !validateForm();
-        }
-
-        function generateWhatsAppOrder() {
-            if (Object.keys(cart).length === 0) {
-                showMessage('Il carrello è vuoto! Seleziona almeno un prodotto dal catalogo.');
-                switchTab('catalog');
+        function renderProducts(productsData) {
+            if (!productsData || productsData.length === 0) {
+                productList.innerHTML = `<div class="col-span-full text-center text-gray-500 p-8">Nessun prodotto disponibile.</div>`;
                 return;
             }
 
-            const customerName = customerNameInput.value.trim();
-            const deliveryOption = deliveryOptionSelect.value;
-            const deliveryAddress = deliveryAddressInput.value.trim();
-            const paymentMethod = paymentMethodSelect.value;
-            
-            let orderText = `*NUOVO ORDINE - L'ORTO SOTTO CASA*\n\n`;
-            orderText += `*Dettagli Cliente:*\n`;
-            orderText += `--------------------\n`;
-            orderText += `*Nome:* ${customerName}\n`;
-            orderText += `*Modalità di Consegna:* ${deliveryOption}\n`;
-            if (deliveryOption === 'Consegna a domicilio') {
-                orderText += `*Indirizzo:* ${deliveryAddress}\n`;
-            }
-            orderText += `*Metodo di Pagamento:* ${paymentMethod}\n\n`;
-            
-            orderText += `*Riepilogo Prodotti:*\n`;
-            orderText += `--------------------\n`;
-            
-            let finalTotal = 0;
-            for (const productId in cart) {
-                const product = products.find(p => p.id === productId);
-                if (product) {
-                    const quantity = cart[productId];
-                    const subtotal = quantity * product.price;
-                    orderText += `- ${product.name}: ${quantity} ${product.unit} = ${subtotal.toFixed(2)}€\n`;
-                    finalTotal += subtotal;
-                }
-            }
+            productList.innerHTML = productsData.map(product => {
+                const [id, name, description, price, unit, , imageUrl] = product;
 
-            orderText += `\n*TOTALE ORDINE:* ${finalTotal.toFixed(2)}€\n\n`;
-            orderText += `_Attendo conferma per procedere._`;
+                if (!name || !imageUrl || !price) return '';
 
-            const encodedOrderText = encodeURIComponent(orderText);
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedOrderText}`;
-            window.open(whatsappUrl, '_blank');
+                const formattedPrice = parseFloat(price).toFixed(2);
+
+                return `
+                    <div class="bg-white rounded-xl shadow-lg p-5 flex flex-col justify-between">
+                        <img src="${imageUrl}" alt="${name}" class="rounded-lg mb-4 object-cover w-full h-48">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-800">${name}</h2>
+                            <p class="text-gray-600 mt-1">${description}</p>
+                            <p class="text-2xl font-bold text-green-600 mt-2">${formattedPrice} ${unit}</p>
+                        </div>
+                        <button onclick="addToCart('${id}', '${name}', ${formattedPrice}, '${unit}')" class="mt-4 w-full bg-indigo-500 text-white py-2 rounded-lg shadow-sm hover:bg-indigo-600 transition-colors">
+                            Aggiungi al carrello
+                        </button>
+                    </div>
+                `;
+            }).join('');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            renderProducts();
-            updateCartDisplay();
-            updateButtonState();
+        window.addToCart = (id, name, price, unit) => {
+            if (cart[id]) {
+                cart[id].quantity += 1;
+            } else {
+                cart[id] = { name, price, unit, quantity: 1 };
+            }
+            showOrderModal();
+        };
 
-            catalogTabBtn.addEventListener('click', () => switchTab('catalog'));
-            checkoutTabBtn.addEventListener('click', () => switchTab('checkout'));
+        // Logica del Modale
+        const orderModal = document.getElementById('order-modal');
+        const orderSummary = document.getElementById('order-summary');
+        const closeModalButton = document.getElementById('close-modal');
+        const orderForm = document.getElementById('order-form');
 
-            whatsappOrderBtn.addEventListener('click', generateWhatsAppOrder);
-            
-            // Listener per chiusura modali
-            document.getElementById('modal-close-btn').addEventListener('click', hideMessage);
-            document.getElementById('product-detail-close-btn').addEventListener('click', hideProductDetails);
-            productDetailModal.addEventListener('click', (e) => {
-                if (e.target === productDetailModal) {
-                    hideProductDetails();
-                }
-            });
+        function showOrderModal() {
+            orderSummary.innerHTML = Object.values(cart).map(item => `
+                <div class="flex justify-between items-center py-2 border-b">
+                    <span>${item.name} x ${item.quantity}</span>
+                    <span class="font-semibold">${(item.price * item.quantity).toFixed(2)} ${item.unit}</span>
+                </div>
+            `).join('');
 
+            const total = Object.values(cart).reduce((sum, item) => sum + item.price * item.quantity, 0);
+            orderSummary.innerHTML += `<div class="flex justify-between items-center py-2 font-bold text-lg border-t-2 mt-2">
+                                        <span>Totale:</span>
+                                        <span>${total.toFixed(2)} €</span>
+                                    </div>`;
 
-            deliveryOptionSelect.addEventListener('change', (e) => {
-                addressField.classList.toggle('hidden', e.target.value !== 'Consegna a domicilio');
-                updateButtonState();
-            });
+            orderModal.classList.remove('hidden');
+        }
 
-            customerNameInput.addEventListener('input', updateButtonState);
-            deliveryAddressInput.addEventListener('input', updateButtonState);
+        closeModalButton.addEventListener('click', () => {
+            orderModal.classList.add('hidden');
+            cart = {}; // Resetta il carrello
         });
+
+        orderForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const customerName = document.getElementById('customer-name').value;
+            const customerPhone = document.getElementById('customer-phone').value;
+            const orderNotes = document.getElementById('order-notes').value;
+
+            let whatsappMessage = `*Ordine Cliente*\nNome: ${customerName}\nTelefono: ${customerPhone}\n\n*Dettagli Ordine:*\n`;
+            Object.values(cart).forEach(item => {
+                whatsappMessage += `${item.name} x ${item.quantity} - ${(item.price * item.quantity).toFixed(2)} ${item.unit}\n`;
+            });
+            whatsappMessage += `\n*Note:*\n${orderNotes}`;
+            
+            const whatsappUrl = `https://wa.me/TUO_NUMERO_WHATSAPP?text=${encodeURIComponent(whatsappMessage)}`;
+            window.open(whatsappUrl, '_blank');
+            orderModal.classList.add('hidden');
+            cart = {}; // Resetta il carrello dopo l'invio
+        });
+
+        // Inizializza il catalogo al caricamento della pagina
+        fetchProducts();
+    });
     </script>
 </body>
 </html>
