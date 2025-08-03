@@ -160,6 +160,11 @@
                         </div>
                         
                         <div>
+                            <label for="customer-phone" class="block text-gray-700 font-bold mb-2">Il tuo numero di telefono:</label>
+                            <input type="tel" id="customer-phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Es. 3451234567">
+                        </div>
+
+                        <div>
                             <label for="delivery-option" class="block text-gray-700 font-bold mb-2">Modalità di Consegna:</label>
                             <select id="delivery-option" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                 <option value="Ritiro in azienda">Ritiro in azienda</option>
@@ -228,6 +233,9 @@
         const SPREADSHEET_ID = '1-JyDl2ahO9bqzbOgUT3N9aDIKJ5sKRhwJThsFlH38DY';
         const SHEET_NAME = 'Prodotti';
         const WHATSAPP_NUMBER = '3927063209';
+        // QUI DEVI INSERIRE L'URL DEL TUO SCRIPT DI GOOGLE APPS, DOPO AVERLO DEPLOYATO.
+        // SE VUOI SOLO TESTARE IL MESSAGGIO WHATSAPP, LASCIALO VUOTO.
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-33LPxlsdcHWJxKh5SY6VnKzQ-xvnIv4VruDOpdUwChuy_r1e31zB49gF0v9EMrk3/exec';
 
         let cart = {};
         let productsData = [];
@@ -248,6 +256,7 @@
         const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
 
         const customerNameInput = document.getElementById('customer-name');
+        const customerPhoneInput = document.getElementById('customer-phone');
         const deliveryOptionSelect = document.getElementById('delivery-option');
         const addressField = document.getElementById('address-field');
         const deliveryAddressInput = document.getElementById('delivery-address');
@@ -545,13 +554,14 @@
 
         function validateForm() {
             const nameFilled = customerNameInput.value.trim() !== '';
+            const phoneFilled = customerPhoneInput.value.trim() !== '';
             const delivery = deliveryOptionSelect.value;
             const addressFilled = deliveryAddressInput.value.trim() !== '';
             
             if (delivery === 'Consegna a domicilio') {
-                return nameFilled && addressFilled;
+                return nameFilled && phoneFilled && addressFilled;
             }
-            return nameFilled;
+            return nameFilled && phoneFilled;
         }
 
         function updateButtonState() {
@@ -559,7 +569,7 @@
         }
 
         function generateWhatsAppOrder() {
-            let hasItems = false;
+             let hasItems = false;
             for (const productId in cart) {
                 if (cart[productId].quantity > 0) {
                     hasItems = true;
@@ -574,6 +584,7 @@
             }
             
             const customerName = customerNameInput.value.trim();
+            const customerPhone = customerPhoneInput.value.trim();
             const deliveryOption = deliveryOptionSelect.value;
             const deliveryAddress = deliveryAddressInput.value.trim();
             const orderNotes = orderNotesTextarea.value.trim();
@@ -582,6 +593,7 @@
             orderText += `*Dettagli Cliente:*\n`;
             orderText += `--------------------\n`;
             orderText += `*Nome:* ${customerName}\n`;
+            orderText += `*Telefono:* ${customerPhone}\n`;
             orderText += `*Modalità di Consegna:* ${deliveryOption}\n`;
             if (deliveryOption === 'Consegna a domicilio') {
                 orderText += `*Indirizzo:* ${deliveryAddress}\n`;
@@ -611,6 +623,82 @@
             window.open(whatsappUrl, '_blank');
         }
 
+        async function saveOrderToSheet() {
+            if (APPS_SCRIPT_URL === '') {
+                showMessage("L'URL dello script di Google Apps non è configurato. L'ordine verrà inviato solo via WhatsApp.");
+                generateWhatsAppOrder();
+                return;
+            }
+
+            const hasItems = Object.values(cart).some(item => item.quantity > 0);
+            if (!hasItems) {
+                showMessage('Il carrello è vuoto! Seleziona almeno un prodotto dal catalogo.');
+                switchTab('catalog');
+                return;
+            }
+
+            // Otteniamo i dati dell'ordine
+            const customerName = customerNameInput.value.trim();
+            const customerPhone = customerPhoneInput.value.trim();
+            const deliveryOption = deliveryOptionSelect.value;
+            const deliveryAddress = deliveryAddressInput.value.trim();
+            const orderNotes = orderNotesTextarea.value.trim();
+
+            const orderDetails = {
+                timestamp: new Date().toLocaleString(),
+                customerName: customerName,
+                customerPhone: customerPhone,
+                deliveryOption: deliveryOption,
+                deliveryAddress: deliveryOption === 'Consegna a domicilio' ? deliveryAddress : '',
+                orderNotes: orderNotes,
+                items: []
+            };
+
+            for (const productId in cart) {
+                const quantity = cart[productId].quantity;
+                if (quantity > 0) {
+                    const product = productsData.find(p => p.id === productId);
+                    if (product) {
+                        const itemTotal = product.price * quantity;
+                        orderDetails.items.push({
+                            productName: product.name,
+                            quantity: quantity,
+                            unit: product.unit,
+                            notes: cart[productId].notes || '',
+                            totalPrice: itemTotal
+                        });
+                    }
+                }
+            }
+            
+            // Messaggio di caricamento
+            whatsappOrderBtn.disabled = true;
+            whatsappOrderBtn.textContent = 'Salvataggio in corso...';
+            
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Necessario per Google Apps Script
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(orderDetails),
+                });
+                
+                // Google Apps Script restituisce una risposta opaca, non possiamo leggerla.
+                // Gestiamo il successo e poi l'invio su WhatsApp.
+                showMessage('Ordine salvato con successo! Ora sarai reindirizzato a WhatsApp per l\'invio del messaggio.');
+                setTimeout(generateWhatsAppOrder, 2000); // Ritardo per mostrare il messaggio di successo
+            } catch (error) {
+                console.error("Errore nel salvataggio dell'ordine:", error);
+                showMessage('Si è verificato un errore durante il salvataggio dell\'ordine. L\'ordine non è stato salvato, ma puoi comunque inviare il messaggio WhatsApp.');
+                generateWhatsAppOrder();
+            } finally {
+                whatsappOrderBtn.disabled = false;
+                whatsappOrderBtn.textContent = 'Invia Ordine via WhatsApp';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             fetchProducts();
             
@@ -633,7 +721,7 @@
             checkoutTabBtn.addEventListener('click', () => switchTab('checkout'));
             headerCartBtn.addEventListener('click', showCartSummary);
             
-            whatsappOrderBtn.addEventListener('click', generateWhatsAppOrder);
+            whatsappOrderBtn.addEventListener('click', saveOrderToSheet);
             
             // Gestione del form di checkout
             deliveryOptionSelect.addEventListener('change', (e) => {
@@ -642,6 +730,7 @@
             });
 
             customerNameInput.addEventListener('input', updateButtonState);
+            customerPhoneInput.addEventListener('input', updateButtonState);
             deliveryAddressInput.addEventListener('input', updateButtonState);
         });
     </script>
