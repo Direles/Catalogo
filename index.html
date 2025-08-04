@@ -362,9 +362,9 @@
                 let isOffer = product.offerta && product.offerta.toLowerCase().trim() === 'si';
                 let offerBadge = isOffer ? `<span class="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">⭐ Offerta</span>` : '';
                 
-                // --- INIZIO CORREZIONE: Gestione del prezzo nullo o non valido ---
-                const productPrice = typeof product.Prezzo === 'number' ? `${product.Prezzo.toFixed(2)} €` : 'Prezzo non disponibile';
-                // --- FINE CORREZIONE ---
+                // CORREZIONE: Gestione del prezzo nullo o non valido nel catalogo
+                const productPrice = (typeof product.Prezzo === 'number' && !isNaN(product.Prezzo)) ? `${product.Prezzo.toFixed(2)} €` : 'Prezzo non disponibile';
+                const productUnit = product.Unità ? ` / ${product.Unità}` : '';
                 
                 card.innerHTML = `
                     <div class="relative">
@@ -374,7 +374,7 @@
                     <h3 class="text-xl font-bold text-gray-800">${product.Nome}</h3>
                     <p class="text-sm text-gray-600 flex-grow">${product.Descrizione}</p>
                     <div class="mt-4 flex justify-between items-center">
-                        <p class="text-lg font-bold text-brand-primary">${productPrice} / ${product.Unità}</p>
+                        <p class="text-lg font-bold text-brand-primary">${productPrice}${productUnit}</p>
                         <button class="add-to-cart-btn bg-green-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-600 transition" data-id="${product.ID_Prodotto}">
                             Aggiungi
                         </button>
@@ -461,7 +461,14 @@
             modalProductName.textContent = product.Nome;
             modalProductImage.src = product.URL_immagine_catalogo;
             modalProductDescription.textContent = product.Descrizione;
-            modalProductPrice.textContent = `${product.Prezzo.toFixed(2)} € / ${product.Unità}`;
+            
+            // CORREZIONE: Controlla se il prezzo è un numero prima di formattarlo,
+            // evitando l'errore che impediva l'apertura del modale.
+            const priceText = (typeof product.Prezzo === 'number' && !isNaN(product.Prezzo))
+                ? `${product.Prezzo.toFixed(2)} € / ${product.Unità}`
+                : 'Prezzo non disponibile';
+            
+            modalProductPrice.textContent = priceText;
             modalQtyInput.value = 1;
             modalProductNotes.value = '';
             productDetailModal.classList.remove('hidden');
