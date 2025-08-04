@@ -250,10 +250,7 @@
             <div id="cart-summary-list" class="space-y-4 max-h-60 overflow-y-auto mb-4 text-left">
                 <!-- Riepilogo del carrello inserito dinamicamente qui -->
             </div>
-            <div class="border-t pt-4 flex justify-between items-center text-lg font-bold">
-                <span>Totale:</span>
-                <span id="cart-summary-total">0.00 €</span>
-            </div>
+            <!-- Rimosso il totale per richiesta dell'utente -->
             <button id="proceed-to-checkout-btn" class="mt-4 bg-brand-primary text-white font-bold py-2 px-4 rounded-lg w-full">
                 Vai al Checkout
             </button>
@@ -274,7 +271,6 @@
         const cartSummaryModal = document.getElementById('cart-summary-modal');
         const cartSummaryCloseBtn = document.getElementById('cart-summary-close-btn');
         const cartSummaryList = document.getElementById('cart-summary-list');
-        const cartSummaryTotal = document.getElementById('cart-summary-total');
         const proceedToCheckoutBtn = document.getElementById('proceed-to-checkout-btn');
         const messageModal = document.getElementById('message-modal');
         const modalMessage = document.getElementById('modal-message');
@@ -516,31 +512,25 @@
             }
         }
 
-        // Funzione per aggiornare il riepilogo del carrello nel modale
+        // Funzione per aggiornare il riepilogo del carrello nel modale (senza prezzi e totale)
         function updateCartSummaryModal() {
             cartSummaryList.innerHTML = '';
-            let total = 0;
-
+            
             if (cart.length === 0) {
                 cartSummaryList.innerHTML = '<p class="text-center text-gray-500">Il carrello è vuoto.</p>';
                 proceedToCheckoutBtn.disabled = true;
             } else {
                 proceedToCheckoutBtn.disabled = false;
                 cart.forEach(item => {
-                    const itemTotal = item.Prezzo * item.quantity;
-                    total += itemTotal;
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'border-b pb-2 mb-2';
                     itemDiv.innerHTML = `
                         <p class="font-bold">${item.Nome} x ${item.quantity} ${item.Unità}</p>
-                        <p class="text-sm text-gray-600">${itemTotal.toFixed(2)} €</p>
                         ${item.notes ? `<p class="text-sm italic text-gray-500">Nota: ${item.notes}</p>` : ''}
                     `;
                     cartSummaryList.appendChild(itemDiv);
                 });
             }
-
-            cartSummaryTotal.textContent = `${total.toFixed(2)} €`;
         }
 
         // Funzione per aggiornare lo stato del pulsante di invio ordine
@@ -588,7 +578,8 @@
 
             message += `\n*Dettaglio Ordine*:\n`;
             message += orderDetails;
-
+            
+            // Numero di telefono del destinatario impostato su 3927063209
             const whatsappUrl = `https://wa.me/3927063209?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
