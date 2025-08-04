@@ -213,555 +213,239 @@
             <textarea id="modal-product-notes" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" rows="2" placeholder="Aggiungi una nota per questo prodotto..."></textarea>
         </div>
     </div>
-    
+
     <!-- Modale per Riepilogo Carrello -->
     <div id="cart-summary-modal" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 hidden">
         <div class="modal-content relative max-w-md w-full">
             <button id="cart-summary-close-btn" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h2 class="text-2xl font-bold text-center mb-6 text-brand-primary">Riepilogo Carrello</h2>
-            <div id="cart-summary-list" class="space-y-3 text-left max-h-64 overflow-y-auto">
-                <!-- I prodotti del carrello verranno inseriti qui -->
+            <h3 class="text-xl font-bold mb-4 text-brand-primary">Riepilogo Ordine</h3>
+            <div id="cart-summary-list" class="space-y-4 max-h-60 overflow-y-auto mb-4 text-left">
+                <!-- Riepilogo del carrello inserito dinamicamente qui -->
             </div>
+            <div class="border-t pt-4 flex justify-between items-center text-lg font-bold">
+                <span>Totale:</span>
+                <span id="cart-summary-total">0.00 €</span>
+            </div>
+            <button id="proceed-to-checkout-btn" class="mt-4 bg-brand-primary text-white font-bold py-2 px-4 rounded-lg w-full">
+                Vai al Checkout
+            </button>
         </div>
     </div>
 
-
     <script>
-        // Configurazione del catalogo
-        const SPREADSHEET_ID = '1-JyDl2ahO9bqzbOgUT3N9aDIKJ5sKRhwJThsFlH38DY';
-        const SHEET_NAME = 'Prodotti';
-        const WHATSAPP_NUMBER = '3927063209';
-        // QUI DEVI INSERIRE L'URL DEL TUO SCRIPT DI GOOGLE APPS, DOPO AVERLO DEPLOYATO.
-        // SE VUOI SOLO TESTARE IL MESSAGGIO WHATSAPP, LASCIALO VUOTO.
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbymCXyLZ5xQuyZ5o4XJ6cuY5MKvN3FOw6e1FjksvXbLPnhomsy7YYWg7gVFiH_AFgrg/exec';
+        // URL dello script Google Apps Script
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjsgvjyoDnaC9feMPToVzwLkgXJoQB5vD_qDvdFKaF2MpP2L_1d6DZsGT1BSaJ-PR5/exec';
 
-        let cart = {};
-        let productsData = [];
-
-        // Riferimenti elementi DOM
-        const productsGrid = document.getElementById('products-grid');
-        const whatsappOrderBtn = document.getElementById('whatsapp-order-btn');
-        const headerCartBtn = document.getElementById('header-cart-btn');
-        const cartIndicator = document.getElementById('cart-indicator');
-        
+        // Variabili globali per l'interfaccia
         const catalogTabBtn = document.getElementById('catalog-tab-btn');
         const checkoutTabBtn = document.getElementById('checkout-tab-btn');
         const catalogView = document.getElementById('catalog-view');
         const checkoutView = document.getElementById('checkout-view');
-        
-        const filterOfferteBtn = document.getElementById('filter-offerte');
-        const filterAllDropdownBtn = document.getElementById('filter-all-dropdown-btn');
-        const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
+        const headerCartBtn = document.getElementById('header-cart-btn');
+        const cartSummaryModal = document.getElementById('cart-summary-modal');
+        const cartSummaryCloseBtn = document.getElementById('cart-summary-close-btn');
+        const proceedToCheckoutBtn = document.getElementById('proceed-to-checkout-btn');
+        const messageModal = document.getElementById('message-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const productDetailModal = document.getElementById('product-detail-modal');
+        const productDetailCloseBtn = document.getElementById('product-detail-close-btn');
 
+        // Variabili per il checkout
         const customerNameInput = document.getElementById('customer-name');
         const customerPhoneInput = document.getElementById('customer-phone');
         const deliveryOptionSelect = document.getElementById('delivery-option');
-        const addressField = document.getElementById('address-field');
         const deliveryAddressInput = document.getElementById('delivery-address');
+        const addressField = document.getElementById('address-field');
         const orderNotesTextarea = document.getElementById('order-notes');
-        
-        const cartSummaryList = document.getElementById('cart-summary-list');
+        const whatsappOrderBtn = document.getElementById('whatsapp-order-btn');
 
-        // Riferimenti Modali
-        const messageModal = document.getElementById('message-modal');
-        const productDetailModal = document.getElementById('product-detail-modal');
-        const cartSummaryModal = document.getElementById('cart-summary-modal');
+        // Stato del carrello e dei prodotti (esempio)
+        let cart = []; // Carrello vuoto
+        const products = [
+            {
+                ID_Prodotto: 'PRD001',
+                Nome: 'Arance',
+                Descrizione: 'Dolci e succose',
+                Prezzo: 1.50,
+                Unità: 'Kg',
+                URL_immagine_catalogo: 'https://lh3.googleusercontent.com/d/11mwalrmICW96tSncDWB9OT-mm2jUQKB2',
+                stato: 'disponibile',
+                categoria: 'Frutta',
+                offerta: 'si'
+            },
+            {
+                ID_Prodotto: 'PRD002',
+                Nome: 'Mele Fuji',
+                Descrizione: 'Croccanti e fresche',
+                Prezzo: 2.00,
+                Unità: 'Pz',
+                URL_immagine_catalogo: 'https://lh3.googleusercontent.com/d/12bfQ8IKENC9wzmDrivx15j7vRJGL7oFY',
+                stato: 'disponibile',
+                categoria: 'Frutta',
+                offerta: 'no'
+            }
+        ];
 
-        function showMessage(message) {
-            messageModal.querySelector('#modal-message').textContent = message;
+        // Funzioni dell'interfaccia utente
+        function showMessageModal(message, isError = false) {
+            modalMessage.textContent = message;
             messageModal.classList.remove('hidden');
+            if (isError) {
+                modalMessage.classList.add('text-red-600');
+            } else {
+                modalMessage.classList.remove('text-red-600');
+            }
         }
 
-        function hideMessage() {
+        function closeMessageModal() {
             messageModal.classList.add('hidden');
         }
-        
-        function showProductDetails(productId) {
-            const product = productsData.find(p => p.id === productId);
-            if (!product) return;
 
-            const modalImage = productDetailModal.querySelector('#modal-product-image');
-            const modalDescription = productDetailModal.querySelector('#modal-product-description');
-            const modalNotes = productDetailModal.querySelector('#modal-product-notes');
-
-            modalImage.src = product.imageUrl;
-            modalDescription.textContent = product.description;
-            
-            // Per gestire le note, usiamo il primo tipo di unità disponibile, dato che il foglio
-            // non supporta note specifiche per unità.
-            const firstUnit = product.unit;
-            modalNotes.value = (cart[productId] && cart[productId].notes) || '';
-            modalNotes.dataset.productId = productId; 
-
-            productDetailModal.classList.remove('hidden');
-        }
-
-        function hideProductDetails() {
-            productDetailModal.classList.add('hidden');
-        }
-
-        function showCartSummary() {
-            renderCartSummary();
-            cartSummaryModal.classList.remove('hidden');
-        }
-
-        function hideCartSummary() {
-            cartSummaryModal.classList.add('hidden');
-        }
-
-        function switchTab(tabToShow) {
-            catalogView.classList.add('hidden');
-            checkoutView.classList.add('hidden');
-            catalogTabBtn.classList.remove('active');
-            checkoutTabBtn.classList.remove('active');
-
-            if (tabToShow === 'checkout') {
-                if (Object.keys(cart).length === 0 || Object.values(cart).every(item => !item.quantity)) {
-                    showMessage('Il carrello è vuoto! Seleziona almeno un prodotto dal catalogo.');
-                    return;
-                }
-                checkoutView.classList.remove('hidden');
-                checkoutTabBtn.classList.add('active');
-            } else {
-                catalogView.classList.remove('hidden');
+        function switchTab(tab) {
+            if (tab === 'catalog') {
                 catalogTabBtn.classList.add('active');
+                checkoutTabBtn.classList.remove('active');
+                catalogView.classList.remove('hidden');
+                checkoutView.classList.add('hidden');
+            } else if (tab === 'checkout') {
+                catalogTabBtn.classList.remove('active');
+                checkoutTabBtn.classList.add('active');
+                catalogView.classList.add('hidden');
+                checkoutView.classList.remove('hidden');
             }
         }
 
-        async function fetchProducts() {
-            const apiUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`Errore di rete: ${response.statusText}`);
-                }
-                const csvText = await response.text();
-                const rows = csvText.split('\n').map(row => 
-                    row.split(',').map(cell => cell.replace(/^"|"$/g, ''))
-                );
-                
-                productsData = rows.slice(1).map(row => {
-                    return {
-                        id: row[0],
-                        name: row[1],
-                        description: row[2],
-                        price: parseFloat(row[3]),
-                        unit: row[4],
-                        imageUrl: row[6],
-                        status: row[7],
-                        category: row[8] || '',
-                        offer: row[9] === 'si'
-                    };
-                }).filter(product => product.name && product.imageUrl && !isNaN(product.price));
-
-                setupDynamicFilters();
-                renderProducts('all');
-            } catch (error) {
-                console.error("Errore nel recuperare i dati:", error);
-                productsGrid.innerHTML = `<div class="col-span-full text-center text-red-500 p-8">
-                                            Errore nel caricare il catalogo.
-                                        </div>`;
-            }
-        }
-
-        function setupDynamicFilters() {
-            // Pulisce il menu a tendina
-            categoryDropdownMenu.innerHTML = '';
-            
-            // Ottiene le categorie uniche e le ordina
-            const categories = [...new Set(productsData.map(p => p.category))].filter(Boolean).sort();
-            
-            categories.forEach(category => {
-                const button = document.createElement('button');
-                button.className = `filter-btn`;
-                button.textContent = category;
-                button.dataset.filter = category;
-                categoryDropdownMenu.appendChild(button);
-            });
-
-            // Listener per il pulsante "Tutti"
-            filterAllDropdownBtn.addEventListener('click', (e) => {
-                categoryDropdownMenu.classList.toggle('hidden');
-                document.getElementById('category-dropdown-arrow').textContent = categoryDropdownMenu.classList.contains('hidden') ? '▼' : '▲';
-                renderProducts('all'); // Visualizza tutti i prodotti quando si apre il menu
-            });
-            
-            // Listener per il pulsante "Offerte"
-            filterOfferteBtn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                filterOfferteBtn.classList.add('active');
-                renderProducts('offerte');
-            });
-            
-            // Listener per i pulsanti nel menu a tendina
-            categoryDropdownMenu.querySelectorAll('.filter-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const filter = e.currentTarget.dataset.filter;
-                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                    filterAllDropdownBtn.classList.add('active');
-                    categoryDropdownMenu.classList.add('hidden'); // Chiude il menu
-                    document.getElementById('category-dropdown-arrow').textContent = '▼';
-                    renderProducts(filter);
-                });
-            });
-
-            // Listener per chiudere il menu a tendina cliccando fuori
-            document.addEventListener('click', (e) => {
-                if (!filterAllDropdownBtn.contains(e.target) && !categoryDropdownMenu.contains(e.target)) {
-                    categoryDropdownMenu.classList.add('hidden');
-                    document.getElementById('category-dropdown-arrow').textContent = '▼';
-                }
-            });
-
-            // Imposta "Tutti" come filtro attivo di default all'avvio
-            filterAllDropdownBtn.classList.add('active');
-        }
-
-        function renderProducts(filter = 'all') {
+        // Funzione per generare il catalogo (placeholder)
+        function generateProductCards() {
+            const productsGrid = document.getElementById('products-grid');
             productsGrid.innerHTML = '';
-            
-            let filteredProducts;
-            if (filter === 'all') {
-                filteredProducts = productsData.filter(p => p.status === 'disponibile');
-            } else if (filter === 'offerte') {
-                filteredProducts = productsData.filter(p => p.offer && p.status === 'disponibile');
-            } else {
-                filteredProducts = productsData.filter(p => p.category === filter && p.status === 'disponibile');
-            }
-            
-            // Aggiorna lo stato attivo dei pulsanti (per "offerte" e "tutti")
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            if(filter === 'offerte') {
-                filterOfferteBtn.classList.add('active');
-            } else {
-                filterAllDropdownBtn.classList.add('active');
-            }
-
-            filteredProducts.forEach((product) => {
-                const currentQuantity = (cart[product.id] && cart[product.id].quantity) || 0;
-                
-                const productCard = document.createElement('div');
-                productCard.className = `product-card-interactive bg-white rounded-lg shadow-md flex flex-col text-center`;
-                productCard.dataset.id = product.id;
-                
-                const formattedPrice = product.price.toFixed(2);
-                
-                productCard.innerHTML = `
-                    ${product.offer ? '<span class="absolute top-2 left-2 text-3xl z-40">⭐</span>' : ''}
-                    
-                    <img src="${product.imageUrl}" alt="${product.name}" class="w-full h-40 object-cover cursor-pointer rounded-t-lg product-image-main" data-product-id="${product.id}">
-                    
-                    <div class="p-4 flex flex-col flex-grow">
-                        <h3 class="text-xl font-bold mb-2">${product.name}</h3>
-                        <p class="text-2xl font-bold text-green-600 mb-2">${formattedPrice} €/${product.unit}</p>
-                        <div class="mt-auto">
-                            <div class="flex items-center justify-center gap-2">
-                                <button class="qty-selector-btn" data-product-id="${product.id}" data-action="decrease">-</button>
-                                <span class="font-bold w-8 text-center" id="qty-${product.id}">${currentQuantity}</span>
-                                <button class="qty-selector-btn" data-product-id="${product.id}" data-action="increase">+</button>
-                            </div>
-                        </div>
-                    </div>
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card-interactive bg-white rounded-lg shadow-md p-4';
+                card.innerHTML = `
+                    <img src="${product.URL_immagine_catalogo}" alt="${product.Nome}" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">${product.Nome}</h3>
+                    <p class="text-sm text-gray-600">${product.Descrizione}</p>
+                    <p class="text-lg font-bold text-brand-primary mt-2">${product.Prezzo.toFixed(2)} € / ${product.Unità}</p>
                 `;
-                productsGrid.appendChild(productCard);
-            });
-            addCardEventListeners();
-        }
-        
-        function addCardEventListeners() {
-            productsGrid.querySelectorAll('.qty-selector-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const productId = e.currentTarget.dataset.productId;
-                    const action = e.currentTarget.dataset.action;
-                    
-                    if (!cart[productId]) cart[productId] = { quantity: 0 };
-                    
-                    if (action === 'increase') {
-                        cart[productId].quantity++;
-                    } else {
-                        cart[productId].quantity = Math.max(0, cart[productId].quantity - 1);
-                    }
-                    
-                    document.getElementById(`qty-${productId}`).textContent = cart[productId].quantity;
-                    updateCartDisplay();
-                });
-            });
-
-            productsGrid.querySelectorAll('.product-image-main').forEach(img => {
-                img.addEventListener('click', (e) => {
-                    showProductDetails(e.currentTarget.dataset.productId);
-                });
+                productsGrid.appendChild(card);
             });
         }
 
-        function updateCartDisplay() {
-            let totalItems = 0;
-            for (const productId in cart) {
-                if (cart[productId].quantity) {
-                    totalItems += cart[productId].quantity;
-                }
-            }
-            cartIndicator.classList.toggle('hidden', totalItems === 0);
-        }
-
-        function renderCartSummary() {
-            cartSummaryList.innerHTML = '';
-            let hasItems = false;
-            let totalAmount = 0;
-
-            for (const productId in cart) {
-                const quantity = cart[productId].quantity;
-                if (quantity > 0) {
-                    const product = productsData.find(p => p.id === productId);
-                    if (product) {
-                        hasItems = true;
-                        const itemTotal = product.price * quantity;
-                        totalAmount += itemTotal;
-
-                        const item = document.createElement('div');
-                        item.className = 'border-b pb-2';
-                        item.innerHTML = `
-                            <div class="flex justify-between">
-                                <p class="font-bold">${product.name} x ${quantity} ${product.unit}</p>
-                                <p class="font-bold">${itemTotal.toFixed(2)} €</p>
-                            </div>
-                        `;
-                        if (cart[productId].notes) {
-                            const noteP = document.createElement('p');
-                            noteP.className = 'text-sm text-gray-500 italic mt-1';
-                            noteP.textContent = `Nota: ${cart[productId].notes}`;
-                            item.appendChild(noteP);
-                        }
-                        cartSummaryList.appendChild(item);
-                    }
-                }
-            }
-
-            if (!hasItems) {
-                cartSummaryList.innerHTML = '<p class="text-center text-gray-500">Il tuo carrello è vuoto.</p>';
-            } else {
-                const totalItem = document.createElement('div');
-                totalItem.className = 'flex justify-between items-center font-bold text-lg border-t-2 pt-2 mt-2';
-                totalItem.innerHTML = `
-                    <span>Totale:</span>
-                    <span>${totalAmount.toFixed(2)} €</span>
-                `;
-                cartSummaryList.appendChild(totalItem);
-            }
-        }
-
-        function validateForm() {
-            const nameFilled = customerNameInput.value.trim() !== '';
-            const phoneFilled = customerPhoneInput.value.trim() !== '';
-            const delivery = deliveryOptionSelect.value;
-            const addressFilled = deliveryAddressInput.value.trim() !== '';
-            
-            if (delivery === 'Consegna a domicilio') {
-                return nameFilled && phoneFilled && addressFilled;
-            }
-            return nameFilled && phoneFilled;
-        }
-
+        // Funzione per aggiornare lo stato del pulsante di invio ordine
         function updateButtonState() {
-            whatsappOrderBtn.disabled = !validateForm();
+            const phone = customerPhoneInput.value.trim();
+            const name = customerNameInput.value.trim();
+            const deliveryOption = deliveryOptionSelect.value;
+            const address = deliveryAddressInput.value.trim();
+            const cartIsEmpty = cart.length === 0;
+
+            let isEnabled = !cartIsEmpty && phone && name;
+
+            if (deliveryOption === 'Consegna a domicilio' && !address) {
+                isEnabled = false;
+            }
+
+            whatsappOrderBtn.disabled = !isEnabled;
         }
 
+        // Funzione per generare il messaggio WhatsApp e inviare l'ordine
         function generateWhatsAppOrder() {
-            let hasItems = false;
-            for (const productId in cart) {
-                if (cart[productId].quantity > 0) {
-                    hasItems = true;
-                    break;
+            const customerName = customerNameInput.value.trim();
+            const orderNotes = orderNotesTextarea.value.trim();
+            const orderDetails = cart.map(item => {
+                let detailString = `${item.Nome} x ${item.quantity} ${item.Unità}`;
+                if (item.notes) {
+                    detailString += ` (Nota: ${item.notes})`;
                 }
+                return detailString;
+            }).join('\n');
+
+            let message = `*Nuovo Ordine*\n`;
+            message += `-------------------------\n`;
+            message += `*Nome*: ${customerName}\n`;
+            message += `*Telefono*: ${customerPhoneInput.value.trim()}\n`;
+            message += `*Modalità di Consegna*: ${deliveryOptionSelect.value}\n`;
+
+            if (deliveryOptionSelect.value === 'Consegna a domicilio') {
+                message += `*Indirizzo*: ${deliveryAddressInput.value.trim()}\n`;
             }
 
-            if (!hasItems) {
-                showMessage('Il carrello è vuoto! Seleziona almeno un prodotto dal catalogo.');
-                switchTab('catalog');
-                return;
-            }
-            
-            const customerName = customerNameInput.value.trim();
-            const customerPhone = customerPhoneInput.value.trim();
-            const deliveryOption = deliveryOptionSelect.value;
-            const deliveryAddress = deliveryAddressInput.value.trim();
-            const orderNotes = orderNotesTextarea.value.trim();
-            
-            let orderText = `*Nuovo ordine - Allegro fattore*\n\n`;
-            orderText += `*Dettagli Cliente:*\n`;
-            orderText += `--------------------\n`;
-            orderText += `*Nome:* ${customerName}\n`;
-            orderText += `*Telefono:* ${customerPhone}\n`;
-            orderText += `*Modalità di Consegna:* ${deliveryOption}\n`;
-            if (deliveryOption === 'Consegna a domicilio') {
-                orderText += `*Indirizzo:* ${deliveryAddress}\n`;
-            }
             if (orderNotes) {
-                orderText += `*Annotazioni Generali:* ${orderNotes}\n`;
+                message += `*Note Generali*: ${orderNotes}\n`;
             }
-            orderText += `\n*Riepilogo Prodotti:*\n`;
-            orderText += `--------------------\n`;
-            
-            for (const productId in cart) {
-                const quantity = cart[productId].quantity;
-                if (quantity > 0) {
-                    const product = productsData.find(p => p.id === productId);
-                    if (product) {
-                        let productLine = `- ${product.name}: ${quantity} ${product.unit}\n`;
-                        orderText += productLine;
-                        if (cart[productId].notes) {
-                            orderText += `  _Nota: ${cart[productId].notes}_\n`;
-                        }
-                    }
-                }
-            }
-            
-            const encodedOrderText = encodeURIComponent(orderText);
-            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedOrderText}`;
-            
-            // Apri WhatsApp in una nuova scheda. Questo non viene bloccato perché è un'azione diretta dell'utente.
+
+            message += `\n*Dettaglio Ordine*:\n`;
+            message += orderDetails;
+
+            const whatsappUrl = `https://wa.me/393333333333?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
 
-        /**
-         * Invia i dati dell'ordine allo script di Google Apps in background.
-         */
+        // Funzione per inviare l'ordine a Google Apps Script
         async function sendOrderToAppsScript() {
-            if (APPS_SCRIPT_URL === '') {
-                // Se l'URL non è configurato, non fare nulla.
-                return;
-            }
-
-            const hasItems = Object.values(cart).some(item => item.quantity > 0);
-            if (!hasItems) {
-                // Non salvare se il carrello è vuoto
-                return;
-            }
-
-            const customerName = customerNameInput.value.trim();
-            const customerPhone = customerPhoneInput.value.trim();
-            const deliveryOption = deliveryOptionSelect.value;
-            const deliveryAddress = deliveryAddressInput.value.trim();
-            const orderNotes = orderNotesTextarea.value.trim();
-
-            const orderDetails = {
-                timestamp: new Date().toLocaleString(),
-                customerName: customerName,
-                customerPhone: customerPhone,
-                deliveryOption: deliveryOption,
-                deliveryAddress: deliveryOption === 'Consegna a domicilio' ? deliveryAddress : '',
-                orderNotes: orderNotes,
-                items: []
+            const payload = {
+                customerName: customerNameInput.value.trim(),
+                customerPhone: customerPhoneInput.value.trim(),
+                deliveryOption: deliveryOptionSelect.value,
+                deliveryAddress: deliveryAddressInput.value.trim(),
+                orderNotes: orderNotesTextarea.value.trim(),
+                items: cart.map(item => ({
+                    productName: item.Nome,
+                    quantity: item.quantity,
+                    unit: item.Unità,
+                    notes: item.notes
+                }))
             };
 
-            for (const productId in cart) {
-                const quantity = cart[productId].quantity;
-                if (quantity > 0) {
-                    const product = productsData.find(p => p.id === productId);
-                    if (product) {
-                        const itemTotal = product.price * quantity;
-                        orderDetails.items.push({
-                            productName: product.name,
-                            quantity: quantity,
-                            unit: product.unit,
-                            notes: cart[productId].notes || '',
-                            totalPrice: itemTotal
-                        });
-                    }
-                }
-            }
-            
             try {
-                // La chiamata fetch avviene in background e non ha bisogno di essere attesa
-                const response = await fetch(APPS_SCRIPT_URL, {
+                // Invia la richiesta in background
+                await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderDetails),
+                    mode: 'no-cors', // Necessario per aggirare i problemi di CORS con Apps Script
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
                 });
-                
-                // Nota: con mode: 'no-cors', la risposta non è accessibile,
-                // quindi non possiamo verificare il successo, ma il browser invierà la richiesta.
             } catch (error) {
-                console.error("Errore nel salvataggio dell'ordine:", error);
+                console.error("Errore nell'invio a Google Apps Script:", error);
             }
         }
-        
-        /**
-         * Cerca un cliente nel database tramite il numero di telefono e precompila i campi del form.
-         * @param {string} phone - Il numero di telefono da cercare.
-         */
+
+        // Funzione per cercare il cliente
         async function fetchCustomerByPhone(phone) {
-            if (!phone) {
-                customerNameInput.value = '';
-                // Pulisce anche l'indirizzo
-                deliveryAddressInput.value = '';
-                return;
-            }
-            
             try {
-                const apiUrl = `${APPS_SCRIPT_URL}?phone=${encodeURIComponent(phone)}`;
-                const response = await fetch(apiUrl);
+                const response = await fetch(`${APPS_SCRIPT_URL}?phone=${phone}`);
                 const data = await response.json();
-                
-                if (data && data.name) {
+                if (data.name) {
                     customerNameInput.value = data.name;
+                    deliveryAddressInput.value = data.address;
                     if (data.address) {
-                        deliveryAddressInput.value = data.address;
                         deliveryOptionSelect.value = 'Consegna a domicilio';
                         addressField.classList.remove('hidden');
                     } else {
-                        // Se non c'è indirizzo, resetta i campi
-                        deliveryAddressInput.value = '';
                         deliveryOptionSelect.value = 'Ritiro in azienda';
                         addressField.classList.add('hidden');
                     }
-                } else {
-                    // Se il cliente non viene trovato, resetta i campi
-                    customerNameInput.value = '';
-                    deliveryAddressInput.value = '';
-                    deliveryOptionSelect.value = 'Ritiro in azienda';
-                    addressField.classList.add('hidden');
                 }
             } catch (error) {
-                console.error("Errore nel recupero dei dati cliente:", error);
-                // In caso di errore, pulisci i campi per evitare dati errati
-                customerNameInput.value = '';
-                deliveryAddressInput.value = '';
-                deliveryOptionSelect.value = 'Ritiro in azienda';
-                addressField.classList.add('hidden');
-            } finally {
-                updateButtonState();
+                console.error('Errore nella ricerca del cliente:', error);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchProducts();
-            
-            // Listener per chiusura modali
-            document.getElementById('modal-close-btn').addEventListener('click', hideMessage);
-            document.getElementById('product-detail-close-btn').addEventListener('click', hideProductDetails);
-            productDetailModal.addEventListener('click', (e) => { if (e.target === productDetailModal) hideProductDetails(); });
-            document.getElementById('cart-summary-close-btn').addEventListener('click', hideCartSummary);
-            cartSummaryModal.addEventListener('click', (e) => { if (e.target === cartSummaryModal) hideCartSummary(); });
-            
-            const modalNotesTextarea = document.getElementById('modal-product-notes');
-            modalNotesTextarea.addEventListener('input', (e) => {
-                const productId = e.target.dataset.productId;
-                if (!cart[productId]) cart[productId] = {};
-                cart[productId].notes = e.target.value.trim();
-            });
+        // Event Listeners
+        window.addEventListener('load', () => {
+            // Genera le card dei prodotti
+            generateProductCards();
+            updateButtonState();
 
-            // Listener per le TAB e i pulsanti principali
+            // Gestione dei tab
             catalogTabBtn.addEventListener('click', () => switchTab('catalog'));
             checkoutTabBtn.addEventListener('click', () => switchTab('checkout'));
-            headerCartBtn.addEventListener('click', showCartSummary);
-            
-            // Listener modificato: ora chiama due funzioni, una per WhatsApp e una per lo script in background.
+
+            // Gestione dell'invio dell'ordine
             whatsappOrderBtn.addEventListener('click', () => {
                 generateWhatsAppOrder();
                 sendOrderToAppsScript();
@@ -790,6 +474,25 @@
                     updateButtonState();
                 }
             });
+
+            // Demo: aggiungi un prodotto al carrello per il test
+            cart.push({
+                Nome: 'Arance',
+                quantity: 2,
+                Unità: 'Kg',
+                notes: 'le voglio dolci',
+                Prezzo: 1.50
+            });
+            cart.push({
+                Nome: 'Mele Fuji',
+                quantity: 3,
+                Unità: 'Pz',
+                notes: 'bel colore',
+                Prezzo: 2.00
+            });
+            
+            // Aggiorna lo stato del pulsante dopo aver aggiunto gli elementi demo
+            updateButtonState();
         });
     </script>
 </body>
