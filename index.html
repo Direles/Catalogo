@@ -361,7 +361,11 @@
                 
                 let isOffer = product.offerta && product.offerta.toLowerCase().trim() === 'si';
                 let offerBadge = isOffer ? `<span class="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">⭐ Offerta</span>` : '';
-
+                
+                // --- INIZIO CORREZIONE: Gestione del prezzo nullo o non valido ---
+                const productPrice = typeof product.Prezzo === 'number' ? `${product.Prezzo.toFixed(2)} €` : 'Prezzo non disponibile';
+                // --- FINE CORREZIONE ---
+                
                 card.innerHTML = `
                     <div class="relative">
                         <img src="${imageUrl}" alt="${product.Nome}" class="w-full h-48 object-cover rounded-lg mb-4">
@@ -370,7 +374,7 @@
                     <h3 class="text-xl font-bold text-gray-800">${product.Nome}</h3>
                     <p class="text-sm text-gray-600 flex-grow">${product.Descrizione}</p>
                     <div class="mt-4 flex justify-between items-center">
-                        <p class="text-lg font-bold text-brand-primary">${product.Prezzo.toFixed(2)} € / ${product.Unità}</p>
+                        <p class="text-lg font-bold text-brand-primary">${productPrice} / ${product.Unità}</p>
                         <button class="add-to-cart-btn bg-green-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-600 transition" data-id="${product.ID_Prodotto}">
                             Aggiungi
                         </button>
