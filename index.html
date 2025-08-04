@@ -634,12 +634,13 @@
         // Funzione per cercare il cliente
         async function fetchCustomerByPhone(phone) {
             try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?phone=${phone}`);
+                // CORREZIONE: Aggiunto il parametro 'action' per richiamare la funzione corretta dello script
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=findCustomer&phone=${phone}`);
                 const data = await response.json();
-                if (data.name) {
-                    customerNameInput.value = data.name;
-                    deliveryAddressInput.value = data.address;
-                    if (data.address) {
+                if (data && data.Nome_Cliente) {
+                    customerNameInput.value = data.Nome_Cliente;
+                    deliveryAddressInput.value = data.Indirizzo;
+                    if (data.Indirizzo) {
                         deliveryOptionSelect.value = 'Consegna a domicilio';
                         addressField.classList.remove('hidden');
                     } else {
@@ -647,8 +648,17 @@
                         addressField.classList.add('hidden');
                     }
                 }
+                // Resetta i campi se non viene trovato un cliente
+                else {
+                    customerNameInput.value = '';
+                    deliveryAddressInput.value = '';
+                    deliveryOptionSelect.value = 'Ritiro in azienda';
+                    addressField.classList.add('hidden');
+                }
             } catch (error) {
                 console.error('Errore nella ricerca del cliente:', error);
+            } finally {
+                updateButtonState();
             }
         }
 
@@ -713,6 +723,7 @@
 
             customerPhoneInput.addEventListener('input', () => {
                 const phone = customerPhoneInput.value.trim();
+                // Ora lo script HTML chiama correttamente lo script di Apps Script con il parametro 'action'
                 if (APPS_SCRIPT_URL !== '' && phone.length >= 8) { 
                     fetchCustomerByPhone(phone);
                 } else {
