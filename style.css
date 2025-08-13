@@ -1,0 +1,99 @@
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #F8F9FA;
+    color: #073B4C;
+    padding-top: 220px;
+}
+.text-brand-primary {
+    color: #118AB2;
+}
+
+.product-card-interactive {
+    position: relative;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    overflow: hidden;
+}
+.product-card-interactive:not(.opacity-50):hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.tab-full {
+    width: 50%;
+    padding: 1rem 0;
+    font-weight: 700;
+    text-align: center;
+    color: #4A5568;
+    background-color: #F8F9FA;
+    transition: all 0.2s ease-in-out;
+    border-bottom: 3px solid transparent;
+}
+.tab-full.active {
+    color: #118AB2;
+    background-color: white;
+    border-bottom-color: #118AB2;
+}
+#catalog-tab-btn {
+    border-right: 1px solid #E2E8F0;
+}
+
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+.modal-content {
+    background-color: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+.qty-selector-btn {
+    background-color: #e2e8f0;
+    border-radius: 9999px;
+    width: 32px;
+    height: 32px;
+    font-weight: 900;
+    color: #4A5568;
+    transition: background-color 0.2s;
+}
+.qty-selector-btn:hover {
+    background-color: #cbd5e1;
+}
+.filter-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    background-color: #e2e8f0;
+    color: #4A5568;
+    cursor: pointer;
+}
+.filter-btn.active {
+    background-color: #118AB2;
+    color: white;
+}
+.dropdown-menu {
+    top: 100%;
+    right: 0;
+    margin-top: 0.5rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+.dropdown-menu .filter-btn {
+    border-radius: 0;
+    text-align: left;
+    width: 100%;
+}
+#checkout-tab-btn {
+    border-left: 1px solid #E2E8F0;
+}
+.modal-product-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
