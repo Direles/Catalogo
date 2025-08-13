@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Sostituisci con il tuo URL di distribuzione dello script di Google Apps Script
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw_n_YlqLCkLZ9Tv2j8-E8FPaue022z98LjJ4x0agJnhR8K5EsNNx_jPhy54ZaZW1vI/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwvMlHtTBKoEoF5LkgDZBt1mMkH9HQH9-Gzhw0m9JbBOTnasovewy3gx7yYoGZaASC8/exec"; 
 
     // Elementi del DOM
     const catalogTabBtn = document.getElementById('catalog-tab-btn');
@@ -402,4 +402,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Caricamento iniziale
     fetchProducts();
+
 });
