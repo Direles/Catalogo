@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Sostituisci con il tuo URL di distribuzione dello script di Google Apps Script
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwOujKFOd84nkPhbfs4txm2gHGL4474CQTjf6hGZ9spc-BS5GMk67gOwe0z0xjdi5Np/exec"; 
-
+    // La costante APPS_SCRIPT_URL è stata spostata nel file proxy.js
+    
     // Elementi del DOM
     const catalogTabBtn = document.getElementById('catalog-tab-btn');
     const checkoutTabBtn = document.getElementById('checkout-tab-btn');
@@ -178,8 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchProducts = async () => {
         loadingSpinner.classList.remove('hidden');
         try {
-            const response = await fetch(`${APPS_SCRIPT_URL}?action=products`);
-            allProducts = await response.json();
+            // Chiamata alla funzione proxy
+            const response = await callAppsScript('products');
+            allProducts = response.products;
             renderProducts();
             populateCategoryDropdown();
         } catch (error) {
@@ -281,14 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         try {
-            const response = await fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify(orderPayload),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            const result = await response.json();
+            // Chiamata alla funzione proxy
+            const result = await callAppsScript(null, 'POST', orderPayload);
             if (result.status !== 'success') {
                 throw new Error(result.message || 'Errore sconosciuto');
             }
@@ -404,5 +398,3 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchProducts();
 
 });
-
-
