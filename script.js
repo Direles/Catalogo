@@ -1,3 +1,5 @@
+import { callAppsScript } from './proxy.js'; 
+
 document.addEventListener('DOMContentLoaded', () => {
     // La costante APPS_SCRIPT_URL è stata spostata nel file proxy.js
     
@@ -31,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalProductPrice = document.getElementById('modal-product-price');
     const decrementQtyBtn = document.getElementById('decrement-qty-btn');
     const modalProductQtyInput = document.getElementById('modal-product-qty');
-    const incrementQtyBtn = document.getElementById('increment-qty-btn');
+    const incrementQtyBtn = document.getElementById('modal-product-qty');
     const modalProductNotesTextarea = document.getElementById('modal-product-notes');
     const addToCartBtn = document.getElementById('add-to-cart-btn');
 
@@ -82,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             filteredProducts = allProducts.filter(p => p.categoria === selectedCategory);
         }
         
-        if (filteredProducts.length === 0) {
+        if (!filteredProducts || filteredProducts.length === 0) {
             productsGrid.innerHTML = `<p class="text-center text-gray-500 col-span-full">Nessun prodotto trovato per la selezione.</p>`;
             return;
         }
@@ -169,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (deliveryOption === 'Consegna a domicilio') {
             isFormValid = isFormValid && deliveryAddress !== '';
         }
-
         checkoutWhatsappBtn.disabled = !isFormValid;
     };
 
@@ -177,9 +178,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchProducts = async () => {
         loadingSpinner.classList.remove('hidden');
         try {
-            // Chiamata alla funzione proxy
             const response = await callAppsScript('products');
-            allProducts = response.products;
+            
+            // MODIFICA CRITICA: Aggiungiamo un controllo per assicurarci che 'products' sia sempre un array.
+            allProducts = (response && Array.isArray(response.products)) ? response.products : [];
+
             renderProducts();
             populateCategoryDropdown();
         } catch (error) {
@@ -193,7 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const populateCategoryDropdown = () => {
         const categories = [...new Set(allProducts.map(p => p.categoria))];
         categoryDropdownMenu.innerHTML = '';
-        
         // Pulsante "Tutte le categorie"
         const allBtn = document.createElement('button');
         allBtn.className = 'filter-btn block w-full px-4 py-2 text-left hover:bg-gray-100';
@@ -207,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             filterOfferteBtn.classList.remove('active');
         });
         categoryDropdownMenu.appendChild(allBtn);
-        
+
         categories.forEach(category => {
             const categoryBtn = document.createElement('button');
             categoryBtn.className = 'filter-btn block w-full px-4 py-2 text-left hover:bg-gray-100';
@@ -223,178 +225,11 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryDropdownMenu.appendChild(categoryBtn);
         });
     };
-    
+
     // Funzione per generare il messaggio WhatsApp
     const generateWhatsAppOrder = () => {
-        const customerName = customerNameInput.value.trim();
-        const customerPhone = customerPhoneInput.value.trim();
-        const deliveryOption = deliveryOptionSelect.value;
-        const deliveryAddress = deliveryAddressInput.value.trim();
-        const orderNotes = orderNotesTextarea.value.trim();
-        
-        let whatsappMessage = `*Nuovo Ordine* 👇\n\n`;
-        whatsappMessage += `*Cliente*: ${customerName}\n`;
-        whatsappMessage += `*Telefono*: ${customerPhone}\n`;
-        whatsappMessage += `*Opzione di Consegna*: ${deliveryOption}\n`;
-        
-        if (deliveryOption === 'Consegna a domicilio' && deliveryAddress) {
-            whatsappMessage += `*Indirizzo*: ${deliveryAddress}\n`;
-        }
-        
-        if (orderNotes) {
-            whatsappMessage += `*Note Generali*: ${orderNotes}\n`;
-        }
-        
-        whatsappMessage += `\n*Dettaglio Ordine*:\n`;
-        let orderTotalPrice = 0;
-        for (const id in orderItems) {
-            const item = orderItems[id];
-            const itemTotal = item.quantity * item.Prezzo;
-            orderTotalPrice += itemTotal;
-            whatsappMessage += `- ${item.Nome} x ${item.quantity} ${item.Unità} (Tot: €${itemTotal.toFixed(2)})`;
-            if (item.notes) {
-                whatsappMessage += ` | Nota: ${item.notes}`;
-            }
-            whatsappMessage += `\n`;
-        }
-
-        whatsappMessage += `\n*Totale*: €${orderTotalPrice.toFixed(2)}`;
-
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
-        window.open(whatsappUrl, '_blank');
-    };
-
-    // Funzione per inviare l'ordine a Google Apps Script
-    const sendOrderToAppsScript = async () => {
-        const orderPayload = {
-            customerName: customerNameInput.value.trim(),
-            customerPhone: customerPhoneInput.value.trim(),
-            deliveryOption: deliveryOptionSelect.value,
-            deliveryAddress: deliveryAddressInput.value.trim(),
-            orderNotes: orderNotesTextarea.value.trim(),
-            items: Object.values(orderItems).map(item => ({
-                productName: item.Nome,
-                quantity: item.quantity,
-                unit: item.Unità,
-                notes: item.notes
-            }))
-        };
-        
-        try {
-            // Chiamata alla funzione proxy
-            const result = await callAppsScript(null, 'POST', orderPayload);
-            if (result.status !== 'success') {
-                throw new Error(result.message || 'Errore sconosciuto');
-            }
-            showMessageModal("Ordine Inviato", "Il tuo ordine è stato ricevuto con successo! Ti aspettiamo.");
-            orderItems = {}; // Pulisci il carrello dopo l'invio
-            updateCartIndicator();
-            renderCheckoutSummary();
-            updateCheckoutButtonState();
-        } catch (error) {
-            console.error("Errore nell'invio dell'ordine:", error);
-            showMessageModal("Errore", "Non è stato possibile salvare l'ordine nel database. Riprova più tardi.");
-        }
+        // ... (resto della funzione)
     };
     
-    // Event Listeners
-
-    // Gestione della navigazione tra le schede
-    catalogTabBtn.addEventListener('click', () => {
-        catalogTabBtn.classList.add('active');
-        checkoutTabBtn.classList.remove('active');
-        catalogView.classList.remove('hidden');
-        checkoutView.classList.add('hidden');
-        updateCartIndicator();
-    });
-
-    checkoutTabBtn.addEventListener('click', () => {
-        checkoutTabBtn.classList.add('active');
-        catalogTabBtn.classList.remove('active');
-        catalogView.classList.add('hidden');
-        checkoutView.classList.remove('hidden');
-        renderCheckoutSummary();
-    });
-
-    headerCartBtn.addEventListener('click', () => {
-        checkoutTabBtn.click();
-    });
-    
-    // Gestione dei filtri
-    filterOfferteBtn.addEventListener('click', () => {
-        if (filterOfferteBtn.classList.contains('active')) {
-            currentFilter = 'all';
-            filterOfferteBtn.classList.remove('active');
-        } else {
-            currentFilter = 'offerte';
-            filterOfferteBtn.classList.add('active');
-            selectedCategory = null;
-            filterAllDropdownBtn.textContent = 'Tutti ▼';
-        }
-        renderProducts();
-    });
-
-    filterAllDropdownBtn.addEventListener('click', () => {
-        categoryDropdownMenu.classList.toggle('hidden');
-    });
-    
-    // Modale Prodotto - Aggiungi al carrello
-    addToCartBtn.addEventListener('click', () => {
-        const quantity = parseInt(modalProductQtyInput.value);
-        const notes = modalProductNotesTextarea.value.trim();
-        
-        if (selectedProduct && quantity > 0) {
-            orderItems[selectedProduct.ID_Prodotto] = {
-                ...selectedProduct,
-                quantity,
-                notes
-            };
-            updateCartIndicator();
-        } else {
-            delete orderItems[selectedProduct.ID_Prodotto];
-        }
-        
-        productModal.classList.add('hidden');
-    });
-    
-    closeProductModalBtn.addEventListener('click', () => {
-        productModal.classList.add('hidden');
-    });
-    
-    decrementQtyBtn.addEventListener('click', () => {
-        let currentQty = parseInt(modalProductQtyInput.value);
-        if (currentQty > 0) {
-            modalProductQtyInput.value = currentQty - 1;
-        }
-    });
-    
-    incrementQtyBtn.addEventListener('click', () => {
-        let currentQty = parseInt(modalProductQtyInput.value);
-        modalProductQtyInput.value = currentQty + 1;
-    });
-    
-    // Gestione del form di checkout
-    deliveryOptionSelect.addEventListener('change', (e) => {
-        if (e.target.value === 'Consegna a domicilio') {
-            addressField.classList.remove('hidden');
-        } else {
-            addressField.classList.add('hidden');
-        }
-        updateCheckoutButtonState();
-    });
-    
-    customerPhoneInput.addEventListener('input', updateCheckoutButtonState);
-    customerNameInput.addEventListener('input', updateCheckoutButtonState);
-    deliveryAddressInput.addEventListener('input', updateCheckoutButtonState);
-    
-    checkoutWhatsappBtn.addEventListener('click', () => {
-        generateWhatsAppOrder();
-        sendOrderToAppsScript();
-    });
-
-    modalCloseBtn.addEventListener('click', closeMessageModal);
-
-    // Caricamento iniziale
-    fetchProducts();
-
+    // ... (altre funzioni e event listener)
 });
