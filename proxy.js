@@ -1,6 +1,6 @@
 // Funzione proxy per gestire le chiamate allo script di Google Apps
 const callAppsScript = async (action, method = 'GET', data = null) => {
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz44KqWzdWqRPkIfLrJ5KOz-YpkN_fbRbcu1M0mRvPILFIzciIVE_A_g4eG7pS16jk/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAolLq4OhWxTXEYBhN_v0O0fxqLcvHxdpWlJiXlRRNQGm5aZD8EmgeqAl4EiTWHiNjfg/exec";
   const params = action ? `?action=${action}` : '';
   const url = `${APPS_SCRIPT_URL}${params}`;
 
@@ -25,4 +25,5 @@ const callAppsScript = async (action, method = 'GET', data = null) => {
     console.error("Errore nella chiamata allo script:", error);
     throw error;
   }
+
 };
