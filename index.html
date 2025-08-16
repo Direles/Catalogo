@@ -27,7 +27,7 @@
     .btn.secondary{background:#ececec; color:#111}
 
     main{padding:16px 0}
-    .toolbar{display:grid; grid-template-columns:1fr 180px 160px 150px 120px; gap:8px; margin:8px 0 12px}
+    .toolbar{display:grid; grid-template-columns:1fr 180px 180px 160px auto; gap:8px; margin:8px 0 12px}
     .toolbar input[type="search"], .toolbar select{width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#fff}
     .toolbar label{display:flex; align-items:center; gap:8px; font-size:.92rem; color:var(--muted)}
 
@@ -104,7 +104,7 @@
       <select id="category">
         <option value="">Tutte le categorie</option>
       </select>
-      <label><input id="only-available" type="checkbox" /> Solo disponibili</label>
+      <label><input id="show-unavailable" type="checkbox" /> Mostra non disponibili</label>
       <label><input id="only-offers" type="checkbox" /> Solo offerte</label>
       <div style="display:flex; gap:8px; justify-content:flex-end">
         <button id="btn-tests" class="btn secondary" title="Esegui test API" style="display:none">Test API</button>
@@ -176,9 +176,9 @@
 
   <script>
   // ======= CONFIG =======
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxV42U3RaxPhIzspDQik19b92zoltz30jGRr65ZaJUQElkNvo2BiUyM7_FnQdPsF_j-og/exec"; // endpoint
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTrFAo__1fJ0A6u-QEeepqA5esgXFc0qaaA-xUboJrbuCYQ9Q05U-kXE6nzrYOVojPVQ/exec"; // endpoint
   const WHATSAPP_NUMBER = "393927063209"; // 39 + numero senza + o spazi
-  const OPEN_WA_AFTER_SAVE = true; // 1) apri subito WhatsApp dopo il salvataggio
+  const OPEN_WA_AFTER_SAVE = true; // apri subito WhatsApp dopo il salvataggio
 
   const PAGE_SIZE = 20;
   const FETCH_TIMEOUT_MS = 12000;
@@ -186,7 +186,7 @@
   const DEMO = location.hash.includes('demo');
   const SHOW_DEV = false; // pulsanti debug nascosti in prod
 
-  // DEMO: includo anche un prezzo promozionale per test
+  // DEMO
   const DEMO_DATA = [
     { id:'APL-GALA-500', name:'Mela Gala', description:'Calibro 70/75', category:'Frutta', image:'', available:true,
       units:[{type:'Kg', price:1.8, newPrice:1.5},{type:'Cassa', price:11.9}] },
@@ -201,7 +201,7 @@
 
   // ======= STATE =======
   let page = 1; let done = false; let loading = false;
-  let currentQuery = ''; let currentCategory = ''; let onlyAvailable = false; let onlyOffers = false;
+  let currentQuery = ''; let currentCategory = ''; let showUnavailableOnly = false; let onlyOffers = false;
   let cart = {}; // { [productId]: { productName, image, selectedUnit, items: { [unit]: { price, newPrice?, qty } } } }
 
   // ======= DOM =======
@@ -215,7 +215,7 @@
   const sentinel = d.getElementById('infinite-sentinel');
   const searchEl = d.getElementById('search');
   const catEl = d.getElementById('category');
-  const availEl = d.getElementById('only-available');
+  const unavailEl = d.getElementById('show-unavailable');
   const offerEl = d.getElementById('only-offers');
   const testsBtn = d.getElementById('btn-tests');
   const cartBtn = d.getElementById('header-cart-btn');
@@ -350,14 +350,35 @@
     const qs = new URLSearchParams({ action:'getProducts', page:String(page), pageSize:String(PAGE_SIZE) });
     if(currentQuery) qs.set('q', currentQuery);
     if(currentCategory) qs.set('category', currentCategory);
-    if(onlyAvailable) qs.set('available', 'true');
     if(onlyOffers) qs.set('offers', 'true');
+    // lato backend: showUnavailable=false => solo disponibili; true => tutti
+    qs.set('showUnavailable', showUnavailableOnly ? 'true' : 'false');
+
     try{
-      const data = await fetchJSON(`${APPS_SCRIPT_URL}?${qs.toString()}`, { cache:'no-store' });
-      const items = data.products || [];
-      if(page === 1){ grid.innerHTML=''; showEmpty(items.length === 0); }
-      if(items.length === 0){ done = true; io.unobserve(sentinel); sentinel.textContent = '— fine elenco —'; loading = false; return; }
-      items.forEach(renderProductCard);
+      let itemsToRender = [];
+      while(true){
+        const data = await fetchJSON(`${APPS_SCRIPT_URL}?${qs.toString()}`, { cache:'no-store' });
+        const items = data.products || [];
+        // se l'utente vuole SOLO non disponibili, filtro qui
+        const filtered = showUnavailableOnly ? items.filter(p => p.available === false) : items;
+
+        if(page === 1 && itemsToRender.length === 0 && filtered.length === 0 && items.length > 0){
+          // La pagina corrente non contiene non disponibili: passa alla successiva
+          page++; qs.set('page', String(page));
+          continue;
+        }
+
+        itemsToRender = filtered;
+
+        if(page === 1 && items.length === 0){
+          grid.innerHTML=''; showEmpty(true); done = true; io.unobserve(sentinel); loading = false; return;
+        }
+        break;
+      }
+
+      if(page === 1){ grid.innerHTML=''; showEmpty(itemsToRender.length === 0); }
+      if(itemsToRender.length === 0){ done = true; io.unobserve(sentinel); sentinel.textContent = '— fine elenco —'; loading = false; return; }
+      itemsToRender.forEach(renderProductCard);
       page++; loading = false;
     } catch(err){
       showError(err);
@@ -371,9 +392,10 @@
     const q = (currentQuery||'').toLowerCase();
     demoRows = DEMO_DATA.filter(p => {
       const offer = (p.units||[]).some(u=> asNum(u.newPrice)>0 && asNum(u.newPrice) < asNum(u.price));
+      const availCond = showUnavailableOnly ? (p.available === false) : (p.available === true);
       return (!q || (String(p.name||'').toLowerCase().includes(q) || String(p.description||'').toLowerCase().includes(q))) &&
              (!currentCategory || String(p.category||'').toLowerCase() === String(currentCategory).toLowerCase()) &&
-             (!onlyAvailable || !!p.available) &&
+             availCond &&
              (!onlyOffers || offer);
     }).sort((a,b)=> {
       const ao = (a.units||[]).some(u=>asNum(u.newPrice)>0 && asNum(u.newPrice) < asNum(u.price));
@@ -402,7 +424,8 @@
         catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
         return;
       }
-      const opts = new URLSearchParams({ action:'getProducts', page:'1', pageSize:'100', available:'true' });
+      // prendi solo disponibili per costruire le categorie visibili normalmente
+      const opts = new URLSearchParams({ action:'getProducts', page:'1', pageSize:'100', showUnavailable:'false' });
       const set = new Set();
       let currentPage = 1; let total = 0; const pageSize = 100;
       while(true){
@@ -525,7 +548,7 @@
     // Listeners
     searchEl.addEventListener('input', ()=>{ currentQuery = searchEl.value.trim(); reload(); });
     catEl.addEventListener('change', ()=>{ currentCategory = catEl.value; reload(); });
-    availEl.addEventListener('change', ()=>{ onlyAvailable = availEl.checked; reload(); });
+    unavailEl.addEventListener('change', ()=>{ showUnavailableOnly = unavailEl.checked; reload(); });
     offerEl.addEventListener('change', ()=>{ onlyOffers = offerEl.checked; reload(); });
 
     cartBtn.addEventListener('click', ()=> showTab('carrello'));
