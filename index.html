@@ -639,19 +639,28 @@ function otherUnitsHTML(units){
   }
 
   async function loadNextPage(){
-    if(loading||done) return;
-    loading=true; showSpinner(true);
-    try{
-      const qs=buildQS();
-      const res=await fetch(`${API_URL}?${qs.toString()}`, { cache:'no-store' });
-      const data=await res.json();
-      const items=data.products||[];
-      if(page===1) renderProducts(items,false); else renderProducts(items,true);
-      if(items.length < PAGE_SIZE){ done=true; observer.disconnect(); }
-      page++;
-    }catch(err){ console.error('loadNextPage', err); }
-    
+  if (loading || done) return;
+  loading = true;
+  showSpinner(true);
+  try{
+    const qs = buildQS();
+    const res = await fetch(`${API_URL}?${qs.toString()}`, { cache:'no-store' });
+    const data = await res.json();
+    const items = data.products || [];
+    if (page === 1) renderProducts(items, false); else renderProducts(items, true);
+    if (items.length < PAGE_SIZE) { 
+      done = true; 
+      observer.disconnect(); 
+    }
+    page++;
+  } catch (err) {
+    console.error('loadNextPage', err);
+  } finally {
+    loading = false;
+    showSpinner(false);   // <-- nasconde sempre lo spinner
   }
+}
+
 
   async function buildCategories(){
     try{
@@ -716,6 +725,8 @@ function otherUnitsHTML(units){
   // 👉 evita doppi invii e mostra spinner sul bottone
   if (sending) return;
   setSubmitting(true);
+  const label = submitBtn.querySelector('.btn-label');
+	if (label) label.textContent = 'Ordine in invio…';
 
   if(!cart.length){ alert("Il carrello è vuoto."); setSubmitting(false); return; }
 
