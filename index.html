@@ -161,9 +161,9 @@
 
   <footer class="container"><small>© <span id="yy"></span> Allegro Fattore — Catalogo</small></footer>
 
-  <script>
+ <script>
   // ======= CONFIG =======
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw79-SEwwYtcx6wUaN6NeY_J3pnPGJy2jHsDJi7xPEHJSuYqXGKMT2-bjSxeuFbc4Grng/exec";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyaq_kubybwYpEUhI59Za6uW-0Z8PQxiHp1SgAHA5jAEP57H0cZDId_f7AfY1NETGHK7A/exec";
   const WHATSAPP_NUMBER = "393927063209";
 
   const PAGE_SIZE = 20;
@@ -220,6 +220,15 @@
   function loadCart(){ try{ cart = JSON.parse(localStorage.getItem('cart')||'{}')||{}; }catch{ cart = {}; } updateCartIndicator(); renderCheckoutSummary(); }
   function cartCount(){ let c=0; for(const pid in cart){ const it=cart[pid].items||{}; for(const u in it){ c += asNum(it[u].qty)||0; } } return c; }
   function updateCartIndicator(){ cartInd.textContent = String(cartCount()); }
+
+  // Normalizza telefono lato client (allineato al backend)
+  function normalizePhoneJS(s) {
+    const digits = String(s || '').replace(/[^\d]/g, '');
+    if (digits.startsWith('39')) return digits;            // già con prefisso
+    if (digits.length === 10 && digits.startsWith('3'))    // cellulare IT 3xxxxxxxxx
+      return '39' + digits;
+    return digits;
+  }
 
   function setQtySelected(product, unit, nextQty, price, newPrice){
     const pid = product.id;
@@ -384,9 +393,12 @@
       items.push({ productId: pid, productName: p.productName, unit: u, quantity: asNum(it.qty) });
     }
     return {
-      customerName: nameEl.value.trim(), customerPhone: phoneEl.value.trim(),
-      deliveryOption: delivEl.value, deliveryAddress: addrEl.value.trim(),
-      orderNotes: notesEl.value.trim(), items
+      customerName: nameEl.value.trim(),
+      customerPhone: normalizePhoneJS(phoneEl.value.trim()), // << normalizzato
+      deliveryOption: delivEl.value,
+      deliveryAddress: addrEl.value.trim(),
+      orderNotes: notesEl.value.trim(),
+      items
     };
   }
 
@@ -430,7 +442,9 @@
     lookupEl.style.display = '';
     nameEl.disabled = true; addrEl.disabled = true;
     try{
-      const qs = new URLSearchParams({ action:'getCustomerByPhone', phone: raw });
+      // usa numero NORMALIZZATO
+      const phone = normalizePhoneJS(raw);
+      const qs = new URLSearchParams({ action:'getCustomerByPhone', phone });
       const data = await fetchJSON(`${APPS_SCRIPT_URL}?${qs.toString()}`, { cache:'no-store' });
       if(data && data.ok && data.customer){
         if(!nameEl.value.trim()) nameEl.value = data.customer.name || '';
@@ -490,7 +504,7 @@
     tabCatalogo.addEventListener('click', ()=> showTab('catalogo'));
     tabCarrello.addEventListener('click', ()=> showTab('carrello'));
 
-    // lookup su blur del telefono (se preferisci posso metterlo su input con debounce)
+    // lookup su blur del telefono
     phoneEl.addEventListener('blur', lookupCustomerByPhone);
 
     // invio e pulizia
@@ -525,6 +539,7 @@
       catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
     } catch(err){ console.warn('buildCategories error', err); }
   }
-  </script>
+</script>
+
 </body>
 </html>
