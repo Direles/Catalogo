@@ -343,7 +343,7 @@
              availCond && (!onlyOffers || offer);
     }).sort((a,b)=> {
       const ao = (a.units||[]).some(u=>asNum(u.newPrice)>0 && asNum(u.newPrice) < asNum(u.price));
-      const bo = (b.units||[]).some u=>asNum(u.newPrice)>0 && asNum(u.newPrice) < asNum(u.price);
+      const bo = (b.units||[]).some(u => asNum(u.newPrice) > 0 && asNum(u.newPrice) < asNum(u.price));
       return (ao===bo) ? String(a.name||'').localeCompare(String(b.name||'')) : (ao?-1:1);
     });
   }
