@@ -31,7 +31,7 @@
     .toolbar label{display:flex; align-items:center; gap:8px; font-size:.92rem; color:var(--muted)}
 
     .error{display:none; margin:10px 0 16px; padding:12px; border:1px solid var(--err); background:var(--err-bg); color:var(--err); border-radius:12px}
-    .error pre{white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:.85rem; color:#7f1d1d; background:#fff; border:1px solid #fca5a5; padding:8px; border-radius:8px}
+    .error pre{white-space:pre-wrap; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:.85rem; color:#7f1d1d; background:#fff; border:1px solid #fca5a5; padding:8px; border-radius:8px}
 
     .grid{display:grid; grid-template-columns:repeat( auto-fill, minmax(240px, 1fr) ); gap:12px}
     .card{position:relative; background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px; display:flex; flex-direction:column}
@@ -90,6 +90,7 @@
   </header>
 
   <main class="container">
+    <!-- TOOLBAR -->
     <div id="toolbar" class="toolbar" aria-label="Filtri catalogo">
       <input id="search" type="search" placeholder="Cerca prodotti… (es. mela, insalata)" aria-label="Cerca" />
       <select id="category"><option value="">Tutte le categorie</option></select>
@@ -100,6 +101,7 @@
       </div>
     </div>
 
+    <!-- ERROR BANNER -->
     <div id="net-error" class="error" role="alert">
       <strong>Errore di rete:</strong> impossibile contattare il server del catalogo.
       <div class="muted" style="margin-top:6px">
@@ -117,18 +119,23 @@
       </div>
     </div>
 
+    <!-- CATALOGO -->
     <section id="catalogo" aria-labelledby="tab-catalogo">
       <div id="products-grid" class="grid" aria-live="polite"></div>
       <div id="catalog-empty" class="empty" style="display:none">Nessun prodotto trovato.</div>
       <div id="infinite-sentinel" class="empty" aria-hidden="true">Carico altri prodotti…</div>
     </section>
 
+    <!-- CARRELLO / ORDINE -->
     <section id="carrello" class="cart" aria-labelledby="tab-carrello">
       <div class="form" style="margin-top:6px">
         <div class="row">
-          <input type="text" id="customer-name" placeholder="Nome e cognome" autocomplete="name" />
+          <!-- Telefono per primo -->
           <input type="tel" id="customer-phone" placeholder="Telefono (mobile)" inputmode="tel" autocomplete="tel" />
+          <input type="text" id="customer-name" placeholder="Nome e cognome" autocomplete="name" />
         </div>
+        <div id="lookup-status" class="muted" style="display:none; margin-top:-6px; margin-bottom:2px">Ricerca dati cliente…</div>
+
         <div class="row">
           <select id="delivery-option">
             <option value="ritiro">Ritiro presso punto di ritiro</option>
@@ -144,8 +151,7 @@
         <div id="checkout-lines"></div>
         <div class="muted" style="margin-top:8px">I prezzi finali verranno comunicati dopo pesatura.</div>
         <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap">
-          <button id="btn-send-order" class="btn">Invia ordine</button>
-          <button id="btn-whatsapp" class="btn secondary">Invia via WhatsApp</button>
+          <button id="btn-transmit" class="btn">Trasmetti ordine</button>
           <button id="btn-clear" class="btn secondary danger" title="Svuota carrello">Svuota</button>
         </div>
         <div id="checkout-msg" class="muted" style="margin-top:8px"></div>
@@ -156,9 +162,9 @@
   <footer class="container"><small>© <span id="yy"></span> Allegro Fattore — Catalogo</small></footer>
 
   <script>
+  // ======= CONFIG =======
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw79-SEwwYtcx6wUaN6NeY_J3pnPGJy2jHsDJi7xPEHJSuYqXGKMT2-bjSxeuFbc4Grng/exec";
   const WHATSAPP_NUMBER = "393927063209";
-  const OPEN_WA_AFTER_SAVE = true;
 
   const PAGE_SIZE = 20;
   const FETCH_TIMEOUT_MS = 12000;
@@ -204,10 +210,11 @@
   const delivEl = d.getElementById('delivery-option');
   const addrEl = d.getElementById('delivery-address');
   const notesEl = d.getElementById('order-notes');
-  const btnSend = d.getElementById('btn-send-order');
-  const btnWA = d.getElementById('btn-whatsapp');
+  const lookupEl = d.getElementById('lookup-status');
+  const btnTransmit = d.getElementById('btn-transmit');
   const btnClear = d.getElementById('btn-clear');
 
+  // ======= UTIL =======
   function asNum(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
   function saveCart(){ localStorage.setItem('cart', JSON.stringify(cart)); updateCartIndicator(); renderCheckoutSummary(); }
   function loadCart(){ try{ cart = JSON.parse(localStorage.getItem('cart')||'{}')||{}; }catch{ cart = {}; } updateCartIndicator(); renderCheckoutSummary(); }
@@ -224,6 +231,7 @@
   }
   function clearCart(){ cart = {}; saveCart(); }
 
+  // ======= NETWORK HELPERS =======
   async function fetchJSON(url, options = {}, timeout = FETCH_TIMEOUT_MS){
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeout);
@@ -241,12 +249,12 @@
   function showError(err){ errorBox.style.display = ''; errDetails.textContent = `URL: ${APPS_SCRIPT_URL}\nOrigine pagina: ${location.origin || location.protocol}\nErrore: ${err?.message || err}`; }
   function hideError(){ errorBox.style.display = 'none'; errDetails.textContent = ''; }
 
+  // ======= RENDER PRODOTTI =======
   function renderPriceLine(sel){
     const line = document.createElement('div'); line.className = 'price-line';
     const hasPromo = asNum(sel.newPrice) > 0 && asNum(sel.newPrice) < asNum(sel.price);
-    if(hasPromo){
-      line.innerHTML = `<span class="old-price">${fmtEUR.format(asNum(sel.price))}</span><span class="new-price">${fmtEUR.format(asNum(sel.newPrice))}</span>`;
-    } else { line.textContent = fmtEUR.format(asNum(sel.price)); }
+    if(hasPromo){ line.innerHTML = `<span class="old-price">${fmtEUR.format(asNum(sel.price))}</span><span class="new-price">${fmtEUR.format(asNum(sel.newPrice))}</span>`; }
+    else { line.textContent = fmtEUR.format(asNum(sel.price)); }
     return line;
   }
 
@@ -310,7 +318,7 @@
     if(currentQuery) qs.set('q', currentQuery);
     if(currentCategory) qs.set('category', currentCategory);
     if(onlyOffers) qs.set('offers', 'true');
-    // server: unavailableOnly=true => solo non disponibili; showUnavailable=false => solo disponibili
+    // server: unavailableOnly=true => solo non disponibili; showUnavailable=false => solo disponibili (default)
     if (showUnavailableOnly) { qs.set('unavailableOnly','true'); } else { qs.set('showUnavailable','false'); }
 
     try{
@@ -335,7 +343,7 @@
              availCond && (!onlyOffers || offer);
     }).sort((a,b)=> {
       const ao = (a.units||[]).some(u=>asNum(u.newPrice)>0 && asNum(u.newPrice) < asNum(u.price));
-      const bo = (b.units||[]).some(u=>asNum(u.newPrice)>0 && asNum(u.newPrice) < asNum(u.price));
+      const bo = (b.units||[]).some u=>asNum(u.newPrice)>0 && asNum(u.newPrice) < asNum(u.price);
       return (ao===bo) ? String(a.name||'').localeCompare(String(b.name||'')) : (ao?-1:1);
     });
   }
@@ -351,27 +359,7 @@
 
   function reload(){ page = 1; done = false; loading = false; grid.innerHTML=''; sentinel.textContent = 'Carico altri prodotti…'; io.observe(sentinel); loadNextPage(); }
 
-  async function buildCategories(){
-    try{
-      if (DEMO){
-        const set = new Set(DEMO_DATA.map(p => p.category).filter(Boolean));
-        const cats = Array.from(set).sort((a,b)=>a.localeCompare(b));
-        catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
-        return;
-      }
-      const opts = new URLSearchParams({ action:'getProducts', page:'1', pageSize:'100', showUnavailable:'false' });
-      const set = new Set(); let currentPage = 1; const pageSize = 100;
-      while(true){
-        opts.set('page', String(currentPage));
-        const data = await fetchJSON(`${APPS_SCRIPT_URL}?${opts.toString()}`, { cache:'no-store' });
-        const items = data.products || []; items.forEach(p => { if(p.category) set.add(String(p.category)); });
-        if(items.length < pageSize) break; currentPage++;
-      }
-      const cats = Array.from(set).sort((a,b)=>a.localeCompare(b));
-      catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
-    } catch(err){ console.warn('buildCategories error', err); }
-  }
-
+  // ======= CHECKOUT (solo elenco, senza prezzi/totali) =======
   function renderCheckoutSummary(){
     linesEl.innerHTML = '';
     const frag = d.createDocumentFragment();
@@ -402,22 +390,27 @@
     };
   }
 
-  async function sendOrder(){
+  // ======= INVIO UNICO: POST + WhatsApp =======
+  async function sendOrderAndWhatsApp(){
     const payload = prepareOrderPayload();
-    if(!payload.customerName || !payload.customerPhone){ msgEl.textContent = 'Inserisci nome e telefono.'; return; }
+    if(!payload.customerPhone){ msgEl.textContent = 'Inserisci il telefono.'; return; }
+    if(!payload.customerName){ msgEl.textContent = 'Inserisci il nome.'; return; }
     if(payload.items.length === 0){ msgEl.textContent = 'Il carrello è vuoto.'; return; }
-    btnSend.disabled = true; msgEl.textContent = 'Invio in corso…'; hideError();
+    btnTransmit.disabled = true; msgEl.textContent = 'Trasmissione in corso…'; hideError();
     try{
       const data = await fetchJSON(APPS_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-      if(data && data.status === 'success'){ msgEl.textContent = 'Ordine registrato!'; if(OPEN_WA_AFTER_SAVE){ sendWhatsApp(); } clearCart(); }
-      else { msgEl.textContent = 'Salvataggio non riuscito.'; }
+      if(data && data.status === 'success'){
+        msgEl.textContent = 'Ordine registrato! Apro WhatsApp…';
+        openWhatsAppFromPayload(payload);
+        clearCart();
+      } else {
+        msgEl.textContent = 'Salvataggio non riuscito.';
+      }
     }catch(err){ msgEl.textContent = 'Errore di rete. Riprova.'; showError(err); }
-    finally{ btnSend.disabled = false; }
+    finally{ btnTransmit.disabled = false; }
   }
 
-  function sendWhatsApp(){
-    const payload = prepareOrderPayload();
-    if(payload.items.length === 0){ msgEl.textContent = 'Il carrello è vuoto.'; return; }
+  function openWhatsAppFromPayload(payload){
     const lines = payload.items.map(it => `${it.productName} x ${it.quantity} ${it.unit}`);
     const text = `Nuovo ordine:%0A`+
       `Cliente: ${encodeURIComponent(payload.customerName)}%0A`+
@@ -429,6 +422,33 @@
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, '_blank');
   }
 
+  // ======= LOOKUP CLIENTE =======
+  async function lookupCustomerByPhone(){
+    const raw = phoneEl.value.trim();
+    if(!raw){ return; }
+    // mostra avviso di ricerca e blocca i campi durante il fetch
+    lookupEl.style.display = '';
+    nameEl.disabled = true; addrEl.disabled = true;
+    try{
+      const qs = new URLSearchParams({ action:'getCustomerByPhone', phone: raw });
+      const data = await fetchJSON(`${APPS_SCRIPT_URL}?${qs.toString()}`, { cache:'no-store' });
+      if(data && data.ok && data.customer){
+        if(!nameEl.value.trim()) nameEl.value = data.customer.name || '';
+        if(!addrEl.value.trim()) addrEl.value = data.customer.address || '';
+        if(!notesEl.value.trim() && data.customer.notes) notesEl.value = data.customer.notes;
+        msgEl.textContent = 'Dati cliente caricati.';
+      } else {
+        msgEl.textContent = 'Nessun cliente trovato: compila i campi.';
+      }
+    } catch(err){
+      console.warn('lookup error', err);
+    } finally {
+      lookupEl.style.display = 'none';
+      nameEl.disabled = false; addrEl.disabled = false;
+    }
+  }
+
+  // ======= TABS =======
   function showTab(tab){
     const cat = tab === 'catalogo';
     tabCatalogo.setAttribute('aria-selected', cat ? 'true' : 'false');
@@ -438,8 +458,10 @@
     sectionCarrello.classList.toggle('show', !cat);
   }
 
+  // ======= OBSERVER =======
   const io = new IntersectionObserver((entries)=>{ if(entries.some(e=>e.isIntersecting)) loadNextPage(); }, { rootMargin:'400px' });
 
+  // ======= DEV =======
   function setDevUI(){ testsBtn.style.display = (SHOW_DEV || DEMO || location.hash.includes('dev')) ? '' : 'none'; useDemoBtn.style.display = (SHOW_DEV || DEMO || location.hash.includes('dev')) ? '' : 'none'; }
   async function runApiTests(){
     hideError(); const logs = []; const ok = m=>logs.push('✅ '+m); const ko = m=>logs.push('❌ '+m);
@@ -451,28 +473,58 @@
     errDetails.textContent = logs.join('\n'); errorBox.style.display = '';
   }
 
+  // ======= INIT =======
   (function init(){
     document.getElementById('yy').textContent = new Date().getFullYear();
-    setDevUI(); loadCart(); buildCategories().catch(()=>{});
+    loadCart(); buildCategories().catch(()=>{});
     io.observe(sentinel); loadNextPage();
 
+    // toolbar
     searchEl.addEventListener('input', ()=>{ currentQuery = searchEl.value.trim(); reload(); });
     catEl.addEventListener('change', ()=>{ currentCategory = catEl.value; reload(); });
     unavailEl.addEventListener('change', ()=>{ showUnavailableOnly = unavailEl.checked; reload(); });
     offerEl.addEventListener('change', ()=>{ onlyOffers = offerEl.checked; reload(); });
 
+    // tab e carrello
     cartBtn.addEventListener('click', ()=> showTab('carrello'));
     tabCatalogo.addEventListener('click', ()=> showTab('catalogo'));
     tabCarrello.addEventListener('click', ()=> showTab('carrello'));
 
-    btnSend.addEventListener('click', sendOrder);
-    btnWA.addEventListener('click', sendWhatsApp);
+    // lookup su blur del telefono (se preferisci posso metterlo su input con debounce)
+    phoneEl.addEventListener('blur', lookupCustomerByPhone);
+
+    // invio e pulizia
+    btnTransmit.addEventListener('click', sendOrderAndWhatsApp);
     btnClear.addEventListener('click', ()=>{ clearCart(); msgEl.textContent = 'Carrello svuotato.'; });
 
+    // dev
+    setDevUI();
     retryBtn.addEventListener('click', ()=>{ hideError(); reload(); });
     testsBtn.addEventListener('click', runApiTests);
     useDemoBtn.addEventListener('click', ()=>{ location.hash = '#demo'; location.reload(); });
   })();
+
+  // ======= CATEGORIE =======
+  async function buildCategories(){
+    try{
+      if (DEMO){
+        const set = new Set(DEMO_DATA.map(p => p.category).filter(Boolean));
+        const cats = Array.from(set).sort((a,b)=>a.localeCompare(b));
+        catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+        return;
+      }
+      const opts = new URLSearchParams({ action:'getProducts', page:'1', pageSize:'100', showUnavailable:'false' });
+      const set = new Set(); let currentPage = 1; const pageSize = 100;
+      while(true){
+        opts.set('page', String(currentPage));
+        const data = await fetchJSON(`${APPS_SCRIPT_URL}?${opts.toString()}`, { cache:'no-store' });
+        const items = data.products || []; items.forEach(p => { if(p.category) set.add(String(p.category)); });
+        if(items.length < pageSize) break; currentPage++;
+      }
+      const cats = Array.from(set).sort((a,b)=>a.localeCompare(b));
+      catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    } catch(err){ console.warn('buildCategories error', err); }
+  }
   </script>
 </body>
 </html>
