@@ -223,6 +223,40 @@ header{
 .toolbar .switch-label .hint {
   display: none; /* nasconde il sottotesto per risparmiare spazio */
 }
+/* Stato di invio per il bottone */
+.btn {
+  position: relative;
+}
+.btn.loading {
+  pointer-events: none;
+  opacity: .85;
+}
+/* Spinner inline nel bottone */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn .btn-spinner {
+  display: none;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,.9);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btnspin2 .8s linear infinite;
+}
+
+.btn.loading .btn-spinner { display: inline-block; }
+.btn.loading {
+  pointer-events: none;   /* niente click */
+  opacity: .85;
+}
+
+@keyframes btnspin2 { to { transform: rotate(360deg); } }
+
+
   </style>
 </head>
 <body>
@@ -328,7 +362,12 @@ header{
         </div>
 
         <div class="row" style="display:flex; gap:8px">
-          <button type="submit" class="btn">Trasmetti Ordine</button>
+          <button type="submit" class="btn" id="submitOrderBtn">
+  <span class="btn-spinner" aria-hidden="true"></span>
+  <span class="btn-label">Trasmetti Ordine</span>
+</button>
+
+
           <button type="button" id="btnClear" class="btn danger">Svuota</button>
         </div>
       </form>
@@ -396,6 +435,19 @@ header{
   // === HELPERS ===
   const $ = (id) => document.getElementById(id);
   const spinner = $("spinner");
+  const submitBtn = document.getElementById('submitOrderBtn');
+let sending = false;
+
+function setSubmitting(state){
+  sending = !!state;
+  if (!submitBtn) return;
+  submitBtn.disabled = state;
+  submitBtn.classList.toggle('loading', state);
+  submitBtn.setAttribute('aria-busy', state ? 'true' : 'false');
+  const label = submitBtn.querySelector('.btn-label');
+  if (label) label.textContent = state ? 'Ordine in invio…' : 'Trasmetti Ordine';
+}
+
     // --- Riferimenti carrello/modale + consegna/ritiro ---
 const cartBackdrop = document.getElementById('cartBackdrop');
 const cartClose    = document.getElementById('cartClose');
@@ -550,19 +602,17 @@ function otherUnitsHTML(units){
   });
 
   toRender.forEach(p => {
-    const card = document.createElement('article');
-    card.className = 'card';
-    card.dataset.pid = p.id;
-    card.innerHTML = cardHTML(p);
+  const card = document.createElement('article');
+  card.className = 'card';
+  card.dataset.pid = p.id;
+  card.innerHTML = cardHTML(p);
 
-    const imgBtn = card.querySelector('.thumb');
-    imgBtn.addEventListener('click', () => openProductModal(p));
-    imgBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProductModal(p); }
-    });
+  const imgBtn = card.querySelector('.thumb');
+  imgBtn.addEventListener('click', () => openProductModal(p));
 
-    frag.appendChild(card);
-  });
+  frag.appendChild(card);
+});
+
 
   wrap.appendChild(frag);
   updateCardBadges();
@@ -600,7 +650,7 @@ function otherUnitsHTML(units){
       if(items.length < PAGE_SIZE){ done=true; observer.disconnect(); }
       page++;
     }catch(err){ console.error('loadNextPage', err); }
-    finally{ loading=false; showSpinner(false); }
+    
   }
 
   async function buildCategories(){
@@ -660,47 +710,69 @@ function otherUnitsHTML(units){
   });
 
   // === INVIO ORDINE ===
-  $("orderForm").addEventListener("submit", async (e)=>{
-    e.preventDefault();
-    if(!cart.length){ alert("Il carrello è vuoto."); return; }
-    const order={
-      customerPhone: normalizePhone($("customerPhone").value.trim()),
-      customerName: $("customerName").value.trim(),
-      deliveryAddress: $("deliveryAddress").value.trim(),
-      orderNotes: $("orderNotes").value.trim(),
-      deliveryOption: (pickup && pickup.checked) ? 'ritiro' : 'consegna',
-      items: cart.map(x=>({ productId:x.id, productName:x.productName, unit:x.unit, quantity:x.quantity, notes:x.note||'' }))
-    };
-    if(!order.customerPhone){ alert("Inserisci il numero di telefono."); return; }
-    if(!order.customerName){ alert("Inserisci il nome."); return; }
-    try{
-      const res=await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(order) });
-      const data=await res.json();
-      if(data.status==='success'){
-        const lines = order.items.map(it => `${it.productName} x ${it.quantity} ${it.unit}${it.notes? ' (Nota: '+encodeURIComponent(it.notes)+')' : ''}`).join("%0A- ");
-        const text =
-  `Nuovo ordine:%0A` +
-  `Cliente: ${encodeURIComponent(order.customerName)}%0A` +
-  `Telefono: ${encodeURIComponent(order.customerPhone)}%0A` +
-  `Modalità: ${encodeURIComponent(order.deliveryOption)}%0A` +
-  (order.deliveryOption === 'consegna' && order.deliveryAddress
-    ? `Indirizzo: ${encodeURIComponent(order.deliveryAddress)}%0A`
-    : ``) +
-  (order.orderNotes ? `Note: ${encodeURIComponent(order.orderNotes)}%0A` : ``) +
-  `%0AProdotti:%0A- ${lines}`;
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, "_blank");
-        toast('Ordine registrato');
-        // non svuoto il carrello automaticamente: se vuoi svuotarlo qui, decommenta:
-        // cart=[]; saveCart();
-      } else {
-        alert("Errore nel salvataggio dell'ordine.");
-      }
-    }catch(err){
-      console.error('invio', err);
-      alert('Errore di rete durante l\'invio dell\'ordine.');
-    }
-  });
+  document.getElementById("orderForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
 
+  // 👉 evita doppi invii e mostra spinner sul bottone
+  if (sending) return;
+  setSubmitting(true);
+
+  if(!cart.length){ alert("Il carrello è vuoto."); setSubmitting(false); return; }
+
+  const order={
+    customerPhone: normalizePhone($("customerPhone").value.trim()),
+    customerName: $("customerName").value.trim(),
+    deliveryAddress: $("deliveryAddress").value.trim(),
+    orderNotes: $("orderNotes").value.trim(),
+    deliveryOption: (pickup && pickup.checked) ? 'ritiro' : 'consegna',
+    items: cart.map(x=>({ productId:x.id, productName:x.productName, unit:x.unit, quantity:x.quantity, notes:x.note||'' }))
+  };
+  if(!order.customerPhone){ alert("Inserisci il numero di telefono."); setSubmitting(false); return; }
+  if(!order.customerName){ alert("Inserisci il nome."); setSubmitting(false); return; }
+
+  try{
+    const res=await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(order) });
+    const data=await res.json();
+    if(data.status==='success'){
+      const lines = order.items.map(it => `${it.productName} x ${it.quantity} ${it.unit}${it.notes? ' (Nota: '+encodeURIComponent(it.notes)+')' : ''}`).join("%0A- ");
+      const text =
+        `Nuovo ordine:%0A` +
+        `Cliente: ${encodeURIComponent(order.customerName)}%0A` +
+        `Telefono: ${encodeURIComponent(order.customerPhone)}%0A` +
+        `Modalità: ${encodeURIComponent(order.deliveryOption)}%0A` +
+        (order.deliveryOption === 'consegna' && order.deliveryAddress ? `Indirizzo: ${encodeURIComponent(order.deliveryAddress)}%0A` : ``) +
+        (order.orderNotes ? `Note: ${encodeURIComponent(order.orderNotes)}%0A` : ``) +
+        `%0AProdotti:%0A- ${lines}`;
+
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`, "_blank");
+	  
+	cart = [];            // svuota il carrello in memoria
+	saveCart();           // persiste su localStorage e aggiorna badge + lista
+	renderCart();         // (ridondante, ma ok se vuoi forzare il refresh)
+
+// reset del form e stato di consegna/ritiro
+document.getElementById('orderForm')?.reset();
+if (pickup) {         // di default: consegna a domicilio
+  pickup.checked = false;
+  syncDeliveryUI();
+}
+
+// chiudi il carrello (opzionale, se preferisci tenerlo aperto rimuovi la riga)
+cartBackdrop.style.display = 'none';
+
+      toast('Ordine registrato');
+      // (opzionale) lascia il bottone disabilitato finché l’utente non chiude il carrello
+    } else {
+      alert("Errore nel salvataggio dell'ordine.");
+    }
+  } catch(err){
+    console.error('invio', err);
+    alert('Errore di rete durante l\'invio dell\'ordine.');
+  } finally {
+    // 👉 riabilita il bottone e rimuove lo spinner
+    setSubmitting(false);
+  }
+});
   // === EVENTI FILTRI ===
   let sTimer=null;
   $("search").addEventListener('input', ()=>{ clearTimeout(sTimer); sTimer=setTimeout(()=>{ currentQuery=$("search").value.trim(); reload(); }, 250); });
