@@ -116,6 +116,7 @@
           <summary>Dettagli tecnici</summary>
           <pre id="err-details"></pre>
         </details>
+          <button id="use-demo" class="btn secondary" title="Carica dati dimostrativi">Usa dati demo</button>
       </div>
     </div>
 
@@ -169,6 +170,14 @@
   const PAGE_SIZE = 20;
   const FETCH_TIMEOUT_MS = 12000; // timeout protettivo
   const fmtEUR = new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR' });
+  const DEMO = location.hash.includes('demo');
+  const DEMO_DATA = [
+    { id:'APL-GALA-500', name:'Mela Gala', description:'Calibro 70/75', category:'Frutta', image:'', offer:false, available:true, units:[{type:'Kg', price:1.5},{type:'Cassa', price:11.9}] },
+    { id:'PER-WILLI-400', name:'Pera Williams', description:'Dolce e succosa', category:'Frutta', image:'', offer:true, available:true, units:[{type:'Kg', price:2.2}] },
+    { id:'INS-GENT-300', name:'Insalata Gentile', description:'Freschissima', category:'Verdura', image:'', offer:false, available:true, units:[{type:'Pz', price:1.2}] },
+    { id:'PAT-NOV-200', name:'Patate Novelle', description:'Sacco 5kg', category:'Verdura', image:'', offer:false, available:false, units:[{type:'Kg', price:0.9},{type:'Sacco', price:4.0}] }
+  ];
+  let demoRows = []; // popolata quando DEMO è attivo
 
   // ======= STATE =======
   let page = 1; let done = false; let loading = false;
@@ -182,6 +191,7 @@
   const errorBox = d.getElementById('net-error');
   const errDetails = d.getElementById('err-details');
   const retryBtn = d.getElementById('retry');
+  const useDemoBtn = d.getElementById('use-demo');
   const sentinel = d.getElementById('infinite-sentinel');
   const searchEl = d.getElementById('search');
   const catEl = d.getElementById('category');
@@ -287,8 +297,44 @@
   function showEmpty(state){ emptyEl.style.display = state ? '' : 'none'; }
 
   async function loadNextPage(){
+    if (DEMO) return loadNextPageDemo();
     if(loading || done) return; loading = true; hideError();
     const qs = new URLSearchParams({ action:'getProducts', page:String(page), pageSize:String(PAGE_SIZE) });
+    if(currentQuery) qs.set('q', currentQuery);
+    if(currentCategory) qs.set('category', currentCategory);
+    if(onlyAvailable) qs.set('available', 'true');
+    try{
+      const data = await fetchJSON(`${APPS_SCRIPT_URL}?${qs.toString()}`, { cache:'no-store' });
+      const items = data.products || [];
+      if(page === 1){ grid.innerHTML=''; showEmpty(items.length === 0); }
+      if(items.length === 0){ done = true; io.unobserve(sentinel); sentinel.textContent = '— fine elenco —'; loading = false; return; }
+      items.forEach(renderProductCard);
+      page++; loading = false;
+    } catch(err){
+      showError(err);
+      loading = false;
+      io.unobserve(sentinel);
+      sentinel.textContent = 'Errore di rete';
+    }
+  }
+
+  function filterSortDemo(){
+    const q = (currentQuery||'').toLowerCase();
+    demoRows = DEMO_DATA.filter(p =>
+      (!q || (String(p.name||'').toLowerCase().includes(q) || String(p.description||'').toLowerCase().includes(q))) &&
+      (!currentCategory || String(p.category||'').toLowerCase() === String(currentCategory).toLowerCase()) &&
+      (!onlyAvailable || !!p.available)
+    ).sort((a,b)=> (a.offer===b.offer) ? String(a.name||'').localeCompare(String(b.name||'')) : (a.offer?-1:1));
+  }
+
+  function loadNextPageDemo(){
+    if(loading || done) return; loading = true; hideError();
+    if(page === 1){ filterSortDemo(); grid.innerHTML=''; showEmpty(demoRows.length === 0); }
+    const start = (page-1)*PAGE_SIZE; const slice = demoRows.slice(start, start+PAGE_SIZE);
+    if(slice.length === 0){ done = true; io.unobserve(sentinel); sentinel.textContent = '— fine elenco —'; loading = false; return; }
+    slice.forEach(renderProductCard);
+    page++; loading = false;
+  });
     if(currentQuery) qs.set('q', currentQuery);
     if(currentCategory) qs.set('category', currentCategory);
     if(onlyAvailable) qs.set('available', 'true');
@@ -313,7 +359,28 @@
   // ======= CATEGORIE =======
   async function buildCategories(){
     try{
+      if (DEMO){
+        const set = new Set(DEMO_DATA.map(p => p.category).filter(Boolean));
+        const cats = Array.from(set).sort((a,b)=>a.localeCompare(b));
+        catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+        return;
+      }
       const opts = new URLSearchParams({ action:'getProducts', page:'1', pageSize:'100', available:'true' });
+      const set = new Set();
+      let currentPage = 1; let total = 0; const pageSize = 100;
+      while(true){
+        opts.set('page', String(currentPage));
+        const data = await fetchJSON(`${APPS_SCRIPT_URL}?${opts.toString()}`, { cache:'no-store' });
+        const items = data.products || [];
+        items.forEach(p => { if(p.category) set.add(String(p.category)); });
+        total = data.total || items.length; if(items.length < pageSize || (currentPage*pageSize) >= total) break; currentPage++;
+      }
+      const cats = Array.from(set).sort((a,b)=>a.localeCompare(b));
+      catEl.innerHTML = '<option value="">Tutte le categorie</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    } catch(err){
+      console.warn('buildCategories error', err);
+    }
+  });
       const set = new Set();
       let currentPage = 1; let total = 0; const pageSize = 100;
       while(true){
@@ -456,6 +523,7 @@
 
     retryBtn.addEventListener('click', ()=>{ hideError(); reload(); });
     testsBtn.addEventListener('click', runApiTests);
+    useDemoBtn.addEventListener('click', ()=>{ location.hash = '#demo'; location.reload(); });
   })();
   </script>
 </body>
