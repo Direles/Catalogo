@@ -256,6 +256,36 @@ header{
 
 @keyframes btnspin2 { to { transform: rotate(360deg); } }
 
+	  /* Stili per il nuovo selettore unità */
+.unit-button-group {
+  display: flex;
+  flex-wrap: wrap; /* Va a capo se ci sono troppe unità */
+  gap: 8px;
+  margin-top: 4px;
+}
+.unit-button-group button {
+  flex: 1; /* Cerca di occupare lo stesso spazio */
+  min-width: 60px; /* Larghezza minima */
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+/* Stile del bottone selezionato */
+.unit-button-group button.active {
+  background: var(--brand-700);
+  color: #fff;
+  border-color: var(--brand-700);
+  font-weight: 600;
+}
+/* Stile del bottone non selezionato al passaggio del mouse */
+.unit-button-group button:not(.active):hover {
+  border-color: #aaa;
+}
 
   </style>
 </head>
@@ -392,8 +422,9 @@ header{
         <div id="mPrice" class="price-line"></div>
 
         <div class="unit-select">
-          <label for="mUnit" class="mini-muted">Unità</label>
-          <select id="mUnit" aria-label="Seleziona unità"></select>
+          <label class="mini-muted">Unità</label>
+          <div id="mUnitButtons" class="unit-button-group">
+            </div>
         </div>
 
         <div class="qty-controls" aria-label="Quantità">
@@ -518,54 +549,98 @@ function otherUnitsHTML(units){
   // === MODALE PRODOTTO ===
   const backdrop = $("modalBackdrop");
   const mImg = $("mImg"), mTitle = $("modalTitle"), mDesc = $("mDesc"), mPrice = $("mPrice"),
-        mUnit = $("mUnit"), mQty = $("mQty"), mNote = $("mNote"), mBadge=$("mBadge");
+        mUnitButtons = $("mUnitButtons"), mQty = $("mQty"), mNote = $("mNote"), mBadge=$("mBadge");
   $("mClose").onclick = closeModal; $("mClose2").onclick = closeModal;
 
   function openProductModal(p){
-    modalProduct=p;
-    mImg.src=p.image||""; mImg.alt=p.name||"Prodotto";
-    mTitle.textContent=p.name||""; mDesc.textContent=p.description||"";
-    mUnit.innerHTML="";
-    (p.units||[]).forEach(u=>{const o=document.createElement('option'); o.value=u.type; o.textContent=u.type; mUnit.appendChild(o);});
-    const hasOffer=(p.units||[]).some(u=>Number(u.newPrice||0)>0 && Number(u.newPrice)<Number(u.price||0));
-    mBadge.style.display=hasOffer? "": "none";
-    const u0=(p.units&&p.units[0])?p.units[0].type:"";
-    const ex=cart.find(x=>x.id===p.id && x.unit===u0) || cart.find(x=>x.id===p.id);
-    mUnit.value = ex? ex.unit : u0;
-    setModalPriceLine();
-    mQty.value = ex? Number(ex.quantity||0) : 0;
-    mNote.value = ex? (ex.note||"") : "";
-    backdrop.style.display="flex";
-  }
+  modalProduct=p;
+  mImg.src=p.image||""; mImg.alt=p.name||"Prodotto";
+  mTitle.textContent=p.name||""; mDesc.textContent=p.description||"";
+
+  // --- Modifica qui ---
+  mUnitButtons.innerHTML=""; // Pulisce i bottoni vecchi
+
+  const hasOffer=(p.units||[]).some(u=>Number(u.newPrice||0)>0 && Number(u.newPrice)<Number(u.price||0));
+  mBadge.style.display=hasOffer? "": "none";
+
+  const u0=(p.units&&p.units[0])?p.units[0].type:"";
+  const ex=cart.find(x=>x.id===p.id && x.unit===u0) || cart.find(x=>x.id===p.id);
+
+  // Seleziona l'unità esistente nel carrello, o la prima
+  const selectedUnit = ex ? ex.unit : u0;
+
+  // Imposta l'unità selezionata sul contenitore
+  mUnitButtons.dataset.selectedUnit = selectedUnit; 
+
+  // Crea i bottoni
+  (p.units||[]).forEach(u => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = u.type;
+    btn.dataset.unitType = u.type;
+    if (u.type === selectedUnit) {
+      btn.classList.add('active'); // Attiva il bottone corretto
+    }
+    // Aggiungi un listener per il click
+    btn.addEventListener('click', () => handleUnitClick(u.type));
+    mUnitButtons.appendChild(btn);
+  });
+  // --- Fine modifica ---
+
+  setModalPriceLine(); // Aggiorna il prezzo
+  mQty.value = ex? Number(ex.quantity||0) : 0;
+  mNote.value = ex? (ex.note||"") : "";
+  backdrop.style.display="flex";
+}
   function closeModal(){ backdrop.style.display="none"; modalProduct=null; }
   function setModalPriceLine(){
-    const unit=(modalProduct?.units||[]).find(u=>u.type===mUnit.value) || (modalProduct?.units||[])[0] || {price:0};
-    mPrice.innerHTML = priceLineHTML(unit);
-  }
-  mUnit.addEventListener('change', ()=>{
+  // Legge l'unità selezionata dal dataset del contenitore
+  const selectedType = mUnitButtons.dataset.selectedUnit; 
+  const unit=(modalProduct?.units||[]).find(u=>u.type===selectedType) || (modalProduct?.units||[])[0] || {price:0};
+  mPrice.innerHTML = priceLineHTML(unit);
+}
+  /*mUnit.addEventListener('change', ()=>{
     setModalPriceLine();
     const ex = cart.find(x=>x.id===modalProduct.id && x.unit===mUnit.value);
     mQty.value = ex? Number(ex.quantity||0):0;
     mNote.value = ex? (ex.note||''):'';
-  });
+  });*/
   $("mMinus").onclick = ()=>{ const n=Math.max(0, Number(mQty.value||0)-1); mQty.value=n; };
   $("mPlus").onclick  = ()=>{ const n=Number(mQty.value||0)+1; mQty.value=n; };
   $("mSave").onclick  = ()=>{
-    if(!modalProduct) return;
-    const unit=mUnit.value;
-    const qty=Math.max(0, Number(mQty.value||0));
-    const note=mNote.value.trim();
-    const idx=findCartIndex(modalProduct.id, unit);
-    if(qty===0){ if(idx>-1)cart.splice(idx,1); }
-    else {
-      const row={ id:modalProduct.id, productName:modalProduct.name, unit, quantity:qty, note };
-      if(idx>-1) cart[idx]=row; else cart.push(row);
-    }
-    saveCart();
-    toast('Carrello aggiornato');
-    closeModal();
-  };
+  if(!modalProduct) return;
 
+  const unit = mUnitButtons.dataset.selectedUnit; // Legge l'unità da qui
+
+  const qty=Math.max(0, Number(mQty.value||0));
+  const note=mNote.value.trim();
+  const idx=findCartIndex(modalProduct.id, unit);
+  if(qty===0){ if(idx>-1)cart.splice(idx,1); }
+  else {
+    const row={ id:modalProduct.id, productName:modalProduct.name, unit, quantity:qty, note };
+    if(idx>-1) cart[idx]=row; else cart.push(row);
+  }
+  saveCart();
+  toast('Carrello aggiornato');
+  closeModal();
+};
+
+		function handleUnitClick(unitType) {
+  // 1. Salva la nuova unità selezionata
+  mUnitButtons.dataset.selectedUnit = unitType;
+
+  // 2. Aggiorna lo stile "attivo" dei bottoni
+  mUnitButtons.querySelectorAll('button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.unitType === unitType);
+  });
+
+  // 3. Aggiorna prezzo e campi (logica del vecchio listener)
+  setModalPriceLine();
+  const ex = cart.find(x => x.id === modalProduct.id && x.unit === unitType);
+  mQty.value = ex ? Number(ex.quantity || 0) : 0;
+  mNote.value = ex ? (ex.note || '') : '';
+}
+		
   // === CARD CATALOGO ===
   function cardHTML(p){
     const hasOffer=(p.units||[]).some(u=>Number(u.newPrice||0)>0 && Number(u.newPrice)<Number(u.price||0));
