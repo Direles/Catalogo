@@ -1,7 +1,7 @@
 {
   "name": "L'Orto Sotto Casa",
   "short_name": "OrtoCasa",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#15803d",
@@ -18,4 +18,5 @@
       "type": "image/png"
     }
   ]
+
 }
