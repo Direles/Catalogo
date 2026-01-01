@@ -1,11 +1,12 @@
-const CACHE_NAME = 'orto-sotto-casa-v3';
+const CACHE_NAME = 'orto-sotto-casa-v5';
 const ASSETS_TO_CACHE = [
-  'index.html',
-  'style.css',
-  'shop.js',
-  'config.js',
-  'logo-AllegroFattore.png',
-  'manifest.json'
+  './',                     
+  './index.html',
+  './style.css',
+  './shop.js',
+  './config.js',
+  './logo-AllegroFattore.png',
+  './manifest.json'
 ];
 
 // Installazione: scarica i file
@@ -13,11 +14,10 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        // Tenta di aggiungere i file uno alla volta per capire quale fallisce (visibile in console)
         return Promise.all(
           ASSETS_TO_CACHE.map(url => {
             return cache.add(url).catch(error => {
-              console.error('Impossibile caricare il file:', url, error);
+              console.error('ERRORE CACHE:', url, error);
             });
           })
         );
@@ -25,7 +25,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Attivazione e pulizia
+// Attivazione e pulizia cache vecchie
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
@@ -38,7 +38,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch
+// Fetch: serve i file dalla cache
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
