@@ -45,109 +45,250 @@
         </div>
     </div>
 
-    <div id="adminInterface" class="hidden opacity-0 transition-opacity duration-500">
-        
-        <nav class="bg-green-700 text-white shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
-                    <div class="flex items-center cursor-pointer" onclick="logout()">
-                        <img src="logo-AllegroFattore.jpg" class="h-10 w-auto mr-3 object-contain rounded-full bg-white p-1">
-                        <span class="font-bold text-xl">Admin Panel</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span id="statusMsg" class="text-sm italic opacity-0 transition-opacity duration-500 hidden sm:block">Pronto</span>
-                        <button onclick="logout()" class="text-sm bg-green-800 hover:bg-green-900 px-3 py-1 rounded text-white transition">
-                            <i class="fas fa-sign-out-alt mr-1"></i> Esci
-                        </button>
+    
+<div id="adminInterface" class="hidden opacity-0 transition-opacity duration-500 h-screen flex flex-col bg-gray-100">
+    
+    <nav class="bg-green-700 text-white shadow-lg z-50 flex-none">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()" class="md:hidden text-white focus:outline-none">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                    <div class="flex items-center">
+                        <img src="logo-AllegroFattore.png" class="h-10 w-auto mr-3 bg-white rounded-full p-1">
+                        <span class="font-bold text-xl hidden sm:block">Admin Panel</span>
                     </div>
                 </div>
-            </div>
-        </nav>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            
-            <div class="bg-white rounded-xl shadow-sm p-4 mb-4 border border-gray-100">
-                <div class="flex flex-col gap-3">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Dal</label>
-                            <input type="date" id="startDate" class="block w-full bg-gray-50 border border-gray-200 rounded-lg text-sm p-2.5 focus:ring-green-500 focus:border-green-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Al</label>
-                            <input type="date" id="endDate" class="block w-full bg-gray-50 border border-gray-200 rounded-lg text-sm p-2.5 focus:ring-green-500 focus:border-green-500">
-                        </div>
-                    </div>
-                    <button onclick="fetchOrders()" class="w-full bg-green-700 active:bg-green-800 text-white font-bold py-3 rounded-lg shadow-sm flex justify-center items-center transition touch-manipulation">
-                        <i class="fas fa-search mr-2"></i> Aggiorna Ordini
+                <div class="flex items-center gap-4">
+                    <span id="statusMsg" class="text-xs italic opacity-0 transition">Salvato</span>
+                    <button onclick="logout()" class="text-sm bg-green-800 hover:bg-green-900 px-3 py-1 rounded text-white transition">
+                        <i class="fas fa-sign-out-alt"></i> Esci
                     </button>
                 </div>
             </div>
+        </div>
+    </nav>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500 flex items-center justify-between sm:block">
-                    <div>
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Ordini</div>
-                        <div class="text-2xl font-black text-gray-800 mt-1" id="countOrders">0</div>
-                    </div>
-                    <div class="sm:hidden bg-green-50 rounded-full p-2 text-green-600"><i class="fas fa-shopping-basket"></i></div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500 flex items-center justify-between sm:block">
-                    <div>
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Incasso</div>
-                        <div class="text-2xl font-black text-gray-800 mt-1" id="sumTotal">€ 0,00</div>
-                    </div>
-                    <div class="sm:hidden bg-blue-50 rounded-full p-2 text-blue-600"><i class="fas fa-euro-sign"></i></div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-purple-500 flex items-center justify-between sm:block">
-                    <div>
-                        <div class="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Logistica</div>
-                        <div class="text-sm font-bold text-gray-800 mt-2 leading-tight" id="deliveryStats">-</div>
-                    </div>
-                    <div class="sm:hidden bg-purple-50 rounded-full p-2 text-purple-600"><i class="fas fa-truck"></i></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <button onclick="triggerAction('creadocumento')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center active:bg-gray-50 transition touch-manipulation hover:shadow-md">
-                    <div class="bg-blue-50 rounded-full p-3 mb-2"><i class="fas fa-file-word text-xl text-blue-600"></i></div>
-                    <span class="text-xs font-bold text-gray-600 uppercase">Riepilogo Doc</span>
+    <div class="flex flex-1 overflow-hidden">
+        
+        <aside id="sidebar" class="bg-white w-64 border-r border-gray-200 hidden md:block flex-col overflow-y-auto">
+            <div class="p-4 space-y-2">
+                <button onclick="showSection('dashboard')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-green-50 text-gray-700 font-medium flex items-center gap-3 bg-green-50 text-green-700">
+                    <i class="fas fa-chart-line w-6 text-center"></i> Dashboard
                 </button>
-                <button onclick="triggerAction('creaetichette')" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center active:bg-gray-50 transition touch-manipulation hover:shadow-md">
-                    <div class="bg-yellow-50 rounded-full p-3 mb-2"><i class="fas fa-tags text-xl text-yellow-600"></i></div>
-                    <span class="text-xs font-bold text-gray-600 uppercase">Etichette</span>
+                <button onclick="showSection('products')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-green-50 text-gray-700 font-medium flex items-center gap-3">
+                    <i class="fas fa-box w-6 text-center"></i> Prodotti
+                </button>
+                <button onclick="showSection('customers')" class="nav-btn w-full text-left px-4 py-3 rounded-lg hover:bg-green-50 text-gray-700 font-medium flex items-center gap-3">
+                    <i class="fas fa-users w-6 text-center"></i> Clienti
                 </button>
             </div>
+        </aside>
 
-            <div id="mobileOrdersList" class="md:hidden space-y-4"></div>
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 relative">
+            
+            <div id="section-dashboard" class="content-section space-y-6">
+                <div class="bg-white rounded-xl shadow p-4 mb-4">
+                     <h2 class="text-lg font-bold mb-4">Gestione Ordini</h2>
+                     <div class="flex flex-wrap gap-4 mb-4 items-end">
+    <div>
+        <label class="block text-xs font-bold text-gray-500 mb-1">Dal</label>
+        <input type="date" id="startDate" class="border rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none">
+    </div>
+    <div>
+        <label class="block text-xs font-bold text-gray-500 mb-1">Al</label>
+        <input type="date" id="endDate" class="border rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none">
+    </div>
+    
+    <button onclick="fetchOrders(false, this)" 
+            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg shadow font-bold transition flex items-center gap-2 h-[42px]">
+        <i class="fas fa-search"></i>
+        <span>Cerca</span>
+    </button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+    
+    <button onclick="triggerAction('creadocumento', this)" 
+            class="flex items-center justify-center gap-3 p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition transform active:scale-95 group">
+        <div class="bg-blue-500 p-2 rounded-lg group-hover:bg-blue-600 transition">
+            <i class="fas fa-file-pdf text-2xl"></i>
+        </div>
+        <div class="text-left">
+            <div class="font-bold text-lg">Scarica Riepilogo</div>
+            <div class="text-blue-200 text-xs">Crea documento ordini</div>
+        </div>
+    </button>
 
-            <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
-                <div class="overflow-x-auto">
+    <button onclick="triggerAction('creaetichette', this)" 
+            class="flex items-center justify-center gap-3 p-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl shadow-lg transition transform active:scale-95 group">
+        <div class="bg-yellow-400 p-2 rounded-lg group-hover:bg-yellow-500 transition">
+            <i class="fas fa-tags text-2xl"></i>
+        </div>
+        <div class="text-left">
+            <div class="font-bold text-lg">Scarica Etichette</div>
+            <div class="text-yellow-100 text-xs">Genera stampe A4</div>
+        </div>
+    </button>
+
+</div>
+                </div>
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-xl shadow border-l-4 border-blue-500">
+        <div class="text-gray-500 text-xs font-bold uppercase">Ordini Periodo</div>
+        <div class="text-2xl font-bold text-gray-800" id="countOrders">0</div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow border-l-4 border-green-500">
+        <div class="text-gray-500 text-xs font-bold uppercase">Incasso Stimato</div>
+        <div class="text-2xl font-bold text-gray-800" id="sumTotal">€ 0,00</div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow border-l-4 border-orange-500">
+        <div class="text-gray-500 text-xs font-bold uppercase">Logistica</div>
+        <div class="text-lg font-bold text-gray-800" id="deliveryStats">-</div>
+    </div>
+</div>
+                <div class="bg-white rounded-lg shadow overflow-hidden">				
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Totale</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
-                            </tr>
+                        <thead class="bg-gray-50 hidden md:table-header-group">
+                            <tr><th>Data</th><th>Cliente</th><th>Importo</th><th>Note/Dettagli</th></tr>
                         </thead>
-                        <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        <tbody id="ordersTableBody"></tbody>
                     </table>
                 </div>
             </div>
-            
-            <div id="loader" class="hidden flex flex-col justify-center items-center py-12">
-                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-10 w-10 mb-3"></div>
-                <span class="text-gray-400 text-sm animate-pulse">Caricamento dati...</span>
-            </div>
-            <div id="noData" class="hidden text-center py-12">
-                <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
-                <p class="text-gray-500 text-sm">Nessun ordine trovato.</p>
+
+            <div id="section-products" class="content-section hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">Catalogo Prodotti</h2>
+                    <button onclick="openProductModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Nuovo Prodotto
+                    </button>
+                </div>
+                <div id="bulkActionsBar" class="hidden bg-blue-50 border border-blue-200 p-3 rounded-lg flex flex-col md:flex-row justify-between items-center gap-3 mb-4 animate-fade-in transition-all">
+    
+    <div class="flex items-center gap-2 w-full md:w-auto justify-center md:justify-start">
+        <span class="font-bold text-blue-800 text-sm bg-blue-100 px-2 py-1 rounded-md">
+            <span id="selectedCount">0</span> selezionati
+        </span>
+        <button onclick="deselectAllProducts()" class="text-xs text-blue-600 hover:text-blue-800 hover:underline p-2">
+            (Deseleziona tutto)
+        </button>
+    </div>
+
+    <div class="flex gap-3 w-full md:w-auto">
+        <button onclick="executeBulkUpdate(true)" class="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fas fa-check"></i> <span class="whitespace-nowrap">Rendi Disponibili</span>
+        </button>
+        <button onclick="executeBulkUpdate(false)" class="flex-1 md:flex-none bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fas fa-times"></i> <span class="whitespace-nowrap">Rendi Non Disponibili</span>
+        </button>
+    </div>
+
+</div>
+                <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 hidden md:table-header-group">
+                            <tr>
+								<th class="px-4 py-3 text-left w-10">
+									<input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded text-green-600 focus:ring-green-500 cursor-pointer">
+								</th>
+                                <th class="px-4 py-3 text-left">IMG</th>
+                                <th class="px-4 py-3 text-left">Nome</th>
+                                <th class="px-4 py-3 text-left">Categoria</th>
+                                <th class="px-4 py-3 text-left">Prezzo</th>
+                                <th class="px-4 py-3 text-left">Disp.</th>
+                                <th class="px-4 py-3 text-right">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                    </table>
+                </div>
             </div>
 
+            <div id="section-customers" class="content-section hidden space-y-6">
+                <h2 class="text-2xl font-bold text-gray-800">Anagrafica Clienti</h2>
+                <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50" id="customersTableHead">
+                            </thead>
+                        <tbody id="customersTableBody" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-xl font-bold" id="prodModalTitle">Modifica Prodotto</h3>
+            <button onclick="closeProductModal()" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="editProdId">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nome Prodotto</label>
+                    <input type="text" id="editProdName" class="w-full border rounded p-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoria</label>
+                    <input type="text" id="editProdCat" class="w-full border rounded p-2" list="catSuggestions">
+                    <datalist id="catSuggestions">
+                        <option value="Verdura"><option value="Frutta"><option value="Uova"><option value="Conserve">
+                    </datalist>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descrizione</label>
+                <textarea id="editProdDesc" class="w-full border rounded p-2" rows="3"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Prezzo (€)</label>
+                    <input type="text" id="editProdPrice" class="w-full border rounded p-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Prezzo Promo</label>
+                    <input type="text" id="editProdPromo" class="w-full border rounded p-2" placeholder="Opzionale">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Unità (es. Kg, Pezzo)</label>
+                    <input type="text" id="editProdUnit" class="w-full border rounded p-2">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 border p-3 rounded bg-gray-50">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="editProdAvail" class="w-5 h-5 text-green-600 rounded">
+                    <span class="ml-2 font-bold text-gray-700">Disponibile</span>
+                </label>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Immagine</label>
+                <div class="flex items-center gap-4">
+                    <img id="editProdPreview" src="" class="h-16 w-16 object-cover rounded border bg-gray-100">
+                    <input type="file" id="editProdFile" accept="image/*" class="text-sm">
+                    <input type="hidden" id="editProdUrl"> </div>
+                <p class="text-xs text-gray-400 mt-1">Carica una nuova foto per sostituire quella attuale.</p>
+            </div>
+        </div>
+        <div class="p-6 border-t bg-gray-50 flex justify-end gap-3">
+            <button onclick="closeProductModal()" class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded">Annulla</button>
+            <button onclick="saveProductForm()" id="btnSaveProd" class="px-6 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-700 shadow">Salva Prodotto</button>
         </div>
     </div>
+</div>
 
     <script src="config.js"></script>
     <script src="script.js"></script>
