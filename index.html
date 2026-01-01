@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Catalogo - L'Orto Sotto Casa</title>
+    
+    <link rel="manifest" href="manifest.json"> <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes"> <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#15803d">
+
+    <link rel="icon" href="logo-AllegroFattore.png" type="image/png">
+    <link rel="apple-touch-icon" href="logo-AllegroFattore.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 font-sans text-gray-800 pb-20">
+
+    <header class="bg-green-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+    <a href="admin.html" title="Area Riservata">
+        <img src="logo-AllegroFattore.png" alt="Logo Allegro Fattore" class="h-12 w-auto object-contain hover:opacity-80 transition">
+    </a>
+    <h1 class="font-bold text-xl tracking-tight">L'Orto Sotto Casa</h1>
+		</div>
+            <div class="relative cursor-pointer" onclick="toggleCart()">
+                <i class="fas fa-shopping-basket text-2xl"></i>
+                <span id="cartBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 py-6">
+	
+		<div class="mb-6 space-y-3">
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Cerca prodotti (es. Arance, Uova...)" 
+                       class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none shadow-sm transition"
+                       onkeyup="applyFilters()">
+                <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
+                <button onclick="clearSearch()" id="clearSearchBtn" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 hidden">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <label class="flex items-center space-x-2 bg-white px-3 py-2 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition select-none shadow-sm">
+                    <input type="checkbox" id="filterOffers" class="w-4 h-4 text-green-600 rounded focus:ring-green-500" onchange="applyFilters()">
+                    <span class="text-sm font-medium text-gray-700">Solo Offerte <i class="fas fa-percent text-red-500 ml-1"></i></span>
+                </label>
+                
+                <label class="flex items-center space-x-2 bg-white px-3 py-2 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition select-none shadow-sm">
+					<input type="checkbox" id="filterSoldOut" class="w-4 h-4 text-green-600 rounded focus:ring-green-500" onchange="applyFilters()">
+					<span class="text-sm font-medium text-gray-700">Mostra solo esauriti</span>
+				</label>
+            </div>
+        </div>
+        
+        <div id="categoryFilter" class="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-4">
+            </div>
+
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            </div>
+
+        <div id="loader" class="flex justify-center py-10">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-10 w-10"></div>
+        </div>
+    </main>
+
+	<div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-center items-end sm:items-center p-0 sm:p-4">
+        <div class="bg-white w-full sm:max-w-md sm:rounded-2xl flex flex-col shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+            
+            <div class="relative h-64">
+                <img id="pmImage" src="" class="w-full h-full object-cover">
+                <button onclick="closeProductModal()" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg text-gray-800 hover:text-red-500 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="p-6 flex-1">
+                <h2 id="pmTitle" class="text-2xl font-bold mb-1 text-gray-800"></h2>
+                <div id="pmPrice" class="text-xl font-bold text-green-700 mb-4"></div>
+                <p id="pmDesc" class="text-gray-600 text-sm mb-6 leading-relaxed"></p>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Scegli formato:</label>
+                    <div id="pmUnits" class="space-y-2">
+                        </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Note per questo prodotto:</label>
+                    <textarea id="pmNotes" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-green-500 outline-none" rows="2" placeholder="Es. Poco maturo, busta separata..."></textarea>
+                </div>
+
+                <div class="flex items-center gap-4 pt-4 border-t border-gray-100">
+                    <div class="flex items-center border border-gray-300 rounded-lg">
+                        <button onclick="adjustPmQty(-1)" class="px-4 py-2 text-gray-600 hover:bg-gray-100 font-bold rounded-l-lg">-</button>
+                        <span id="pmQty" class="w-12 text-center font-bold">1</span>
+                        <button onclick="adjustPmQty(1)" class="px-4 py-2 text-gray-600 hover:bg-gray-100 font-bold rounded-r-lg">+</button>
+                    </div>
+                    
+                    <button onclick="addToCartFromModal()" class="flex-1 bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-green-800 transform active:scale-95 transition flex justify-center items-center gap-2">
+                        <span>Aggiungi</span>
+                        <span id="pmBtnPrice" class="text-sm opacity-90"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-center items-end sm:items-center">
+        <div class="bg-white w-full sm:max-w-lg sm:rounded-lg h-[90vh] sm:h-auto flex flex-col shadow-2xl animate-slide-up">
+            
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h2 class="font-bold text-lg"><i class="fas fa-shopping-cart mr-2"></i>Il tuo Ordine</h2>
+                <button onclick="toggleCart()" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
+            </div>
+
+            <div id="cartItems" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="text-center text-gray-500 mt-10">Il carrello è vuoto</div>
+            </div>
+
+            <div class="p-4 bg-gray-50 border-t space-y-3">
+                <div class="relative">
+    <input type="tel" id="customerPhone" placeholder="Il tuo Telefono (es. 3331234567)" 
+           class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none pr-10 disabled:bg-gray-100 disabled:text-gray-500" 
+           onchange="lookupCustomer()">
+    
+    <div id="phoneLoader" class="absolute right-3 top-3 hidden">
+        <i class="fas fa-circle-notch fa-spin text-green-600 text-lg"></i>
+    </div>
+</div>
+                <div id="customerFields" class="hidden space-y-3">
+                    <input type="text" id="customerName" placeholder="Nome e Cognome" class="w-full p-3 border rounded-lg">
+                    <input type="text" id="customerAddress" placeholder="Indirizzo di consegna" class="w-full p-3 border rounded-lg">
+                    <textarea id="orderNotes" placeholder="Note (es. orario preferito, citofono...)" class="w-full p-3 border rounded-lg h-20"></textarea>
+                    
+                    <div class="flex gap-2 text-sm">
+                        <label class="flex items-center gap-2 p-2 border rounded flex-1 cursor-pointer bg-white">
+                            <input type="radio" name="delivery" value="Consegna a domicilio" checked> Spedizione
+                        </label>
+                        <label class="flex items-center gap-2 p-2 border rounded flex-1 cursor-pointer bg-white">
+                            <input type="radio" name="delivery" value="Ritiro in sede"> Ritiro
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t bg-white">
+                <div class="flex justify-between items-center mb-4 text-xl font-bold">
+                    <span>Totale:</span>
+                    <span id="cartTotal">€ 0,00</span>
+                </div>
+                <button onclick="submitOrder()" id="btnSubmit" class="w-full bg-green-600 text-white font-bold py-4 rounded-lg shadow hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    INVIA ORDINE (WhatsApp)
+                </button>
+            </div>
+        </div>
+    </div>
+	<script src="config.js"></script>
+    <script src="shop.js"></script>
+	<script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registrato con successo:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Fallita registrazione ServiceWorker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
