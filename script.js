@@ -645,31 +645,43 @@ const toBase64 = file => new Promise((resolve, reject) => {
 async function fetchCustomersAdmin() {
     const thead = document.getElementById('customersTableHead');
     const tbody = document.getElementById('customersTableBody');
-    tbody.innerHTML = '<tr><td class="text-center py-8 text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i>Caricamento clienti...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-8 text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i>Caricamento clienti...</td></tr>';
 
     try {
         const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getcustomers&password=${encodeURIComponent(adminPassword)}`);
         const data = await res.json();
 
         if (data.ok && data.customers) {
-            const headers = data.customers.headers;
+            const headers = data.customers.headers; // Array delle intestazioni (Nome, Telefono, etc.)
             const rows = data.customers.rows;
 
-            // Header dinamico
-            thead.innerHTML = '<tr>' + headers.map(h => `<th class="px-4 py-3 text-left font-bold uppercase text-xs text-gray-500 bg-gray-100">${h}</th>`).join('') + '</tr>';
+            // 1. Costruisci Header (Visibile solo su PC)
+            thead.innerHTML = '<tr>' + headers.map(h => `<th class="px-4 py-3 text-left font-bold uppercase text-xs text-gray-500 bg-gray-50 tracking-wider whitespace-nowrap">${h}</th>`).join('') + '</tr>';
 
-            // Body
+            // 2. Costruisci Body (Card su Mobile / Tabella su PC)
             tbody.innerHTML = rows.map(r => `
-                <tr class="hover:bg-gray-50 border-b">
-                    ${r.map(cell => `<td class="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">${cell}</td>`).join('')}
+                <tr class="flex flex-col md:table-row bg-white mb-6 md:mb-0 rounded-xl shadow-md md:shadow-none border border-gray-200 md:border-b md:border-gray-200 p-4 md:p-0 hover:bg-gray-50 transition duration-200">
+                    
+                    ${r.map((cell, i) => `
+                        <td class="flex justify-between items-center md:table-cell px-2 py-2 md:px-4 md:py-3 border-b md:border-0 border-gray-100 text-sm text-gray-700">
+                            <span class="md:hidden font-bold text-gray-400 text-xs uppercase mr-4 min-w-[100px] text-right">
+                                ${headers[i]}:
+                            </span>
+                            
+                            <span class="font-medium md:font-normal text-right md:text-left break-all">
+                                ${cell}
+                            </span>
+                        </td>
+                    `).join('')}
+
                 </tr>
             `).join('');
             
         } else {
-            tbody.innerHTML = '<tr><td class="p-4 text-red-500 text-center">Nessun dato trovato o errore password.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="100%" class="p-4 text-red-500 text-center">Nessun dato trovato o errore password.</td></tr>';
         }
     } catch (e) {
-        tbody.innerHTML = `<tr><td class="p-4 text-red-500 text-center">Errore: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="100%" class="p-4 text-red-500 text-center">Errore: ${e.message}</td></tr>`;
     }
 }
 
