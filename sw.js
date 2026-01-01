@@ -1,8 +1,8 @@
-const CACHE_NAME = 'orto-sotto-casa-v2';
+const CACHE_NAME = 'orto-sotto-casa-v3';
 const ASSETS_TO_CACHE = [
   'index.html',
-  'tyle.css',
-  'hop.js',
+  'style.css',
+  'shop.js',
   'config.js',
   'logo-AllegroFattore.png',
   'manifest.json'
@@ -46,5 +46,4 @@ self.addEventListener('fetch', (event) => {
         return response || fetch(event.request);
       })
   );
-
 });
