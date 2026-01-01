@@ -1,0 +1,21 @@
+{
+  "name": "L'Orto Sotto Casa",
+  "short_name": "OrtoCasa",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#15803d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo-AllegroFattore.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo-AllegroFattore.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
