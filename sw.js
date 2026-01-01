@@ -1,4 +1,4 @@
-const CACHE_NAME = 'orto-sotto-casa-v1';
+const CACHE_NAME = 'orto-sotto-casa-v2';
 const ASSETS_TO_CACHE = [
   'index.html',
   'tyle.css',
@@ -46,4 +46,5 @@ self.addEventListener('fetch', (event) => {
         return response || fetch(event.request);
       })
   );
+
 });
