@@ -115,16 +115,31 @@ function renderProducts(list) {
         const img = p.image || 'https://via.placeholder.com/300x200?text=No+Image';
         
         let priceDisplay = "";
+        let priceClass = "text-green-700"; // Colore default (Verde)
+
         if (p.units.length > 1) {
+             // CASO VARIANTI (es. "da €...")
              const minP = Math.min(...p.units.map(u => u.newPrice > 0 ? u.newPrice : u.price));
              priceDisplay = `da €${minP.toFixed(2)}`;
         } else {
+             // CASO UNITA SINGOLA (Gestione Offerta)
              const u = p.units[0];
-             const finalP = u.newPrice > 0 ? u.newPrice : u.price;
-             priceDisplay = `€${finalP.toFixed(2)} / ${u.type}`;
+             
+             if (u.newPrice && u.newPrice > 0) {
+                 // C'è un'offerta: Cambio il colore base e costruisco l'HTML doppio
+                 priceClass = ""; // Rimuovo il verde forzato
+                 priceDisplay = `
+                    <div class="flex flex-col md:flex-row md:items-baseline gap-1">
+                        <span class="text-red-600 font-bold text-xl">€${Number(u.newPrice).toFixed(2)}</span>
+                        <s class="text-gray-400 text-xs font-normal">€${Number(u.price).toFixed(2)}</s>
+                        <span class="text-xs text-gray-500 font-normal hidden md:inline">/ ${u.type}</span>
+                    </div>`;
+             } else {
+                 // Prezzo Normale
+                 priceDisplay = `€${Number(u.price).toFixed(2)} <span class="text-xs font-normal">/ ${u.type}</span>`;
+             }
         }
 
-        // Opacità se esaurito
         const opacityClass = !p.available ? 'opacity-60 grayscale' : '';
 
         return `
@@ -139,7 +154,9 @@ function renderProducts(list) {
                 <p class="text-sm text-gray-500 mb-3 line-clamp-2">${p.description || ''}</p>
                 
                 <div class="mt-auto flex justify-between items-end border-t pt-3 border-gray-50">
-                    <div class="text-green-700 font-bold text-lg">${priceDisplay}</div>
+                    <div class="${priceClass} font-bold text-lg leading-none">
+                        ${priceDisplay}
+                    </div>
                     <button class="bg-green-50 text-green-700 hover:bg-green-100 rounded-full w-8 h-8 flex items-center justify-center transition">
                         <i class="fas fa-plus"></i>
                     </button>
