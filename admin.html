@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Admin - L'Orto Sotto Casa</title>
     
     <meta name="mobile-web-app-capable" content="yes">
@@ -17,7 +17,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-50 min-h-screen font-sans text-gray-800 pb-10">
+<body class="bg-gray-50 h-screen w-screen overflow-hidden font-sans text-gray-800">
 
     <div id="loginSection" class="min-h-screen flex flex-col items-center justify-center p-4 bg-green-800">
         <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center animate-slide-up">
@@ -46,15 +46,13 @@
     </div>
 
     
-<div id="adminInterface" class="hidden opacity-0 transition-opacity duration-500 h-screen flex flex-col bg-gray-100">
+<div id="adminInterface" class="hidden opacity-0 transition-opacity duration-500 h-full flex flex-col bg-gray-100">
     
     <nav class="bg-green-700 text-white shadow-lg z-50 flex-none">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-4">
-                    <button onclick="toggleSidebar()" class="md:hidden text-white focus:outline-none">
-                        <i class="fas fa-bars text-2xl"></i>
-                    </button>
+                    
                     <div class="flex items-center">
                         <img src="logo-AllegroFattore.jpg" class="h-10 w-auto mr-3 bg-white rounded-full p-1">
                         <span class="font-bold text-xl hidden sm:block">Admin Panel</span>
@@ -86,7 +84,7 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-4 sm:p-8 relative">
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 relative pb-24 overscroll-contain" id="mainContent">
             
             <div id="section-dashboard" class="content-section space-y-6">
                 <div class="bg-white rounded-xl shadow p-4 mb-4">
@@ -119,6 +117,11 @@
             <div class="text-blue-200 text-xs">Crea documento ordini</div>
         </div>
     </button>
+	
+	<button onclick="triggerAction('crealistaprodotti', this)" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg flex items-center justify-center transition-all transform hover:scale-105">
+		<i class="fas fa-clipboard-list text-2xl mr-3"></i>
+		<span>Scarica Lista Raccolta</span>
+	</button>
 
     <button onclick="triggerAction('creaetichette', this)" 
             class="flex items-center justify-center gap-3 p-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl shadow-lg transition transform active:scale-95 group">
@@ -288,6 +291,25 @@
             <button onclick="saveProductForm()" id="btnSaveProd" class="px-6 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-700 shadow">Salva Prodotto</button>
         </div>
     </div>
+</div>
+
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+    
+    <button onclick="showSection('dashboard')" class="nav-btn-mobile flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-green-600 transition group" data-target="dashboard">
+        <i class="fas fa-chart-line text-xl mb-1 group-hover:scale-110 transition"></i>
+        <span class="text-[10px] font-bold">Dashboard</span>
+    </button>
+
+    <button onclick="showSection('products')" class="nav-btn-mobile flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-green-600 transition group" data-target="products">
+        <i class="fas fa-box text-xl mb-1 group-hover:scale-110 transition"></i>
+        <span class="text-[10px] font-bold">Prodotti</span>
+    </button>
+
+    <button onclick="showSection('customers')" class="nav-btn-mobile flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-green-600 transition group" data-target="customers">
+        <i class="fas fa-users text-xl mb-1 group-hover:scale-110 transition"></i>
+        <span class="text-[10px] font-bold">Clienti</span>
+    </button>
+
 </div>
 
     <script src="config.js"></script>

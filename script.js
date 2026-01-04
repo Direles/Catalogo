@@ -10,21 +10,50 @@ let adminPassword = "";
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Controlla sessione salvata
     const savedPass = sessionStorage.getItem('adminPass');
-    
     if (savedPass) {
         adminPassword = savedPass;
-        fetchOrders(true); // Login silenzioso
+        fetchOrders(true);
     }
     
-    // 2. Setup date (default: ultima settimana)
+    // 2. SETUP DATE INTELLIGENTE (Martedì / Venerdì)
     const today = new Date();
-    const lastWeek = new Date();
-    lastWeek.setDate(today.getDate() - 6);
+    const day = today.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven, 6=Sab
     
-    const elEnd = document.getElementById('endDate');
+    let start = new Date(today);
+    let end = new Date(today);
+    
+    // Logica: 
+    // Se siamo Mer(3), Gio(4) o Ven(5) -> Ciclo VENERDÌ (Start: Mercoledì, End: Venerdì)
+    // Se siamo Sab(6), Dom(0), Lun(1) o Mar(2) -> Ciclo MARTEDÌ (Start: Sabato prec, End: Martedì)
+    
+    if (day >= 3 && day <= 5) {
+        // Ciclo VENERDÌ
+        // Start: torna indietro a Mercoledì (day 3)
+        start.setDate(today.getDate() - (day - 3));
+        // End: vai avanti a Venerdì (day 5)
+        end.setDate(today.getDate() + (5 - day));
+    } else {
+        // Ciclo MARTEDÌ
+        // End: vai avanti/indietro al prossimo Martedì (day 2)
+        const daysToTuesday = (2 - day + 7) % 7; 
+        // Se oggi è martedì (0), end è oggi. Se lun (1), +1. Se sab (6), +3.
+        // Nota: se oggi è Mar, daysToTue è 0.
+        
+        // Calcolo fine (Martedì)
+        // Se oggi è Mar, end = oggi. Se oggi è Sab, end = tra 3 giorni.
+        let diffEnd = (day <= 2) ? (2 - day) : (9 - day);
+        end.setDate(today.getDate() + diffEnd);
+        
+        // Start: Sabato precedente (3 giorni prima del martedì di chiusura)
+        start = new Date(end);
+        start.setDate(end.getDate() - 3);
+    }
+
     const elStart = document.getElementById('startDate');
-    if(elEnd) elEnd.valueAsDate = today;
-    if(elStart) elStart.valueAsDate = lastWeek;
+    const elEnd = document.getElementById('endDate');
+    
+    if(elStart) elStart.valueAsDate = start;
+    if(elEnd) elEnd.valueAsDate = end;
     
     // 3. Listener Tasto Invio sul Login
     const passInput = document.getElementById('adminPassInput');
@@ -95,27 +124,42 @@ function showSection(sectionName) {
     // 1. Nascondi tutte le sezioni
     document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
     
-    // 2. Reset stile bottoni menu
+    // 2. Reset stile bottoni DESKTOP
     document.querySelectorAll('.nav-btn').forEach(el => {
         el.classList.remove('bg-green-50', 'text-green-700');
-        el.classList.add('text-gray-700'); // torna grigio
+        el.classList.add('text-gray-700'); 
+    });
+
+    // 3. Reset stile bottoni MOBILE
+    document.querySelectorAll('.nav-btn-mobile').forEach(el => {
+        el.classList.remove('text-green-600', 'bg-green-50');
+        el.classList.add('text-gray-500'); 
     });
     
-    // 3. Mostra sezione scelta
+    // 4. Mostra sezione scelta
     const target = document.getElementById(`section-${sectionName}`);
     if (target) target.classList.remove('hidden');
 
-    // 4. Evidenzia bottone attivo (cerchiamo il bottone che chiama questa funzione)
-    // (Un metodo semplice è ricalcare l'onclick, qui uso un approccio generico)
-    const activeBtn = document.querySelector(`button[onclick="showSection('${sectionName}')"]`);
-    if (activeBtn) {
-        activeBtn.classList.add('bg-green-50', 'text-green-700');
-        activeBtn.classList.remove('text-gray-700');
+    // 5. Evidenzia bottone attivo DESKTOP (cerchiamo per onclick)
+    const activeBtnDesktop = document.querySelector(`aside button[onclick="showSection('${sectionName}')"]`);
+    if (activeBtnDesktop) {
+        activeBtnDesktop.classList.add('bg-green-50', 'text-green-700');
+        activeBtnDesktop.classList.remove('text-gray-700');
     }
 
-    // 5. Carica dati se necessario
+    // 6. Evidenzia bottone attivo MOBILE (cerchiamo per data-target)
+    const activeBtnMobile = document.querySelector(`.nav-btn-mobile[data-target="${sectionName}"]`);
+    if (activeBtnMobile) {
+        activeBtnMobile.classList.add('text-green-600'); // Colore icona attiva
+        activeBtnMobile.classList.remove('text-gray-500');
+    }
+
+    // 7. Carica dati se necessario
     if(sectionName === 'products') fetchProductsAdmin();
     if(sectionName === 'customers') fetchCustomersAdmin();
+    
+    // Scrolla in cima su mobile per UX migliore
+    if(window.innerWidth < 768) window.scrollTo(0,0);
 }
 
 // Toggle menu mobile
@@ -379,14 +423,37 @@ async function triggerAction(actionName, btnElement) {
         <span class="font-bold text-lg ml-3">Generazione in corso...</span>
     `;
 
+    // Date
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+
     try {
-        const url = `${GOOGLE_SCRIPT_URL}?action=${actionName}&password=${encodeURIComponent(adminPassword)}`;
+        const url = `${GOOGLE_SCRIPT_URL}?action=${actionName}&startDate=${start}&endDate=${end}&password=${encodeURIComponent(adminPassword)}`;
         const res = await fetch(url);
         const json = await res.json();
 
         if (json.success) {
-            // Successo: Scarica il file
-            if(json.url) { 
+            // --- CASO 1: SCARICAMENTO DIRETTO (Base64) ---
+            if (json.fileData) {
+                // Convertiamo la stringa Base64 in un file Blob
+                const byteCharacters = atob(json.fileData);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+                // Creiamo un link invisibile e lo clicchiamo
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = json.name || "documento.pdf";
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            } 
+            // --- CASO 2: FALLBACK VECCHIO SISTEMA (URL) ---
+            else if(json.url) { 
                 const link = document.createElement('a');
                 link.href = json.url;
                 link.target = '_blank';
@@ -394,7 +461,8 @@ async function triggerAction(actionName, btnElement) {
                 link.click();
                 link.remove();
             }
-            // Feedback visivo rapido "Fatto!"
+
+            // Feedback "Fatto!"
             btnElement.innerHTML = `<i class="fas fa-check text-2xl"></i><span class="font-bold text-lg ml-3">Fatto!</span>`;
             setTimeout(() => {
                 restoreButton(btnElement, originalContent, originalClasses);
