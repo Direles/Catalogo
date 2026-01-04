@@ -356,56 +356,130 @@ function renderOrders(orders) {
     updateStats(orders);
 }
 
-// --- Inline Edit Prezzo ---
+// --- Modifica Importo: Smart Toolbar Inline (CODICE PULITO) ---
+
 function enableInlineEdit(rowIndex, currentVal) {
-    const box = document.getElementById(`price-box-${rowIndex}`);
-    if (!box) return;
-    const valForInput = parseFloat(currentVal).toFixed(2);
+    // 1. Cerca il contenitore della riga
+    var boxId = 'price-box-' + rowIndex;
+    var box = document.getElementById(boxId);
     
-    // Ferma la propagazione per evitare ri-click immediati
+    if (!box) {
+        console.error("Box non trovato: " + boxId);
+        return;
+    }
+
+    // Preparazione valore
+    var valFormatted = parseFloat(currentVal).toFixed(2);
+
+    // Disabilita click sulla cella per evitare riaperture
     box.onclick = null;
-    
+
+    // Cambia stile: diventa una "pillola" bianca con bordo verde
+    box.className = "flex items-center justify-end gap-0 bg-white p-0.5 pr-1 rounded-full shadow-lg border border-green-500 transition-all animate-fade-in";
+
+    // Inietta l'HTML della Toolbar
     box.innerHTML = `
-        <div class="flex items-center justify-end gap-1 animate-fade-in" onclick="event.stopPropagation()">
-            <input type="number" step="0.50" id="input-price-${rowIndex}" value="${valForInput}" 
-                   class="w-20 p-1 text-right text-sm border border-blue-400 rounded focus:ring-2 focus:ring-blue-200 outline-none font-bold text-gray-800">
-            <button onclick="saveInlinePrice(${rowIndex})" class="bg-green-100 text-green-700 hover:bg-green-200 p-1.5 rounded transition"><i class="fas fa-check"></i></button>
-            <button onclick="fetchOrders()" class="bg-gray-100 text-gray-500 hover:bg-gray-200 p-1.5 rounded transition"><i class="fas fa-times"></i></button>
+        <button type="button" onclick="cancelInlineEdit(event, ${rowIndex}, '${valFormatted}')" 
+                class="w-8 h-8 flex-none flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition cursor-pointer">
+            <i class="fas fa-times text-sm"></i>
+        </button>
+
+        <div class="relative flex-1 min-w-[70px] max-w-[90px]">
+            <span class="absolute left-1 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs pointer-events-none">€</span>
+            <input type="number" id="input-price-${rowIndex}" value="${valFormatted}" step="0.01" inputmode="decimal"
+                   class="w-full h-8 pl-4 pr-1 text-base font-bold text-gray-800 bg-transparent border-b border-transparent focus:border-green-500 outline-none text-center p-0 transition-colors rounded-none placeholder-gray-300"
+                   onkeydown="if(event.key==='Enter') saveInlinePrice(${rowIndex})">
         </div>
+
+        <button type="button" onclick="saveInlinePrice(${rowIndex})" id="btn-save-${rowIndex}" 
+                class="w-8 h-8 flex-none flex items-center justify-center rounded-full bg-green-600 text-white shadow-md hover:bg-green-700 transition transform active:scale-95 ml-1 cursor-pointer">
+            <i class="fas fa-check text-sm"></i>
+        </button>
     `;
-    setTimeout(() => {
-        const input = document.getElementById(`input-price-${rowIndex}`);
-        if(input) input.select(); 
+
+    // Focus automatico sul campo input
+    setTimeout(function() {
+        var input = document.getElementById('input-price-' + rowIndex);
+        if (input) {
+            input.focus();
+            input.select();
+        }
     }, 50);
 }
 
+// --- Funzione CHIUSURA ISTANTANEA ---
+function cancelInlineEdit(e, rowIndex, originalVal) {
+    // 1. Ferma la propagazione del click
+    if(e && e.stopPropagation) {
+        e.stopPropagation();
+    } else if (window.event) {
+        window.event.cancelBubble = true; // Fallback per browser vecchi
+    }
+	var box = document.getElementById('price-box-' + rowIndex);
+    if (!box) return;
+
+    var valFormatted = parseFloat(originalVal).toFixed(2);
+
+    // Ripristina lo stile originale (trasparente)
+    box.className = "flex items-center justify-end gap-2 cursor-pointer p-2 md:p-1 rounded bg-blue-50 md:bg-transparent border border-blue-100 md:border-transparent hover:border-blue-300 transition";
+    
+    // Ripristina l'HTML originale (Prezzo + Matita)
+    box.innerHTML = `
+        <span class="font-black text-gray-900 text-lg md:text-base">€ ${valFormatted}</span>
+        <i class="fas fa-pen text-blue-500 md:text-gray-300 hover:text-blue-600 text-sm"></i>
+    `;
+
+    // Riattiva il click listener originale
+    box.onclick = function() { 
+        enableInlineEdit(rowIndex, originalVal); 
+    };
+}
+
+// --- Funzione SALVATAGGIO ---
 async function saveInlinePrice(rowIndex) {
-    const input = document.getElementById(`input-price-${rowIndex}`);
-    const box = document.getElementById(`price-box-${rowIndex}`);
+    var input = document.getElementById('input-price-' + rowIndex);
+    var box = document.getElementById('price-box-' + rowIndex);
+    var btn = document.getElementById('btn-save-' + rowIndex);
+    
     if (!input || !box) return;
     
-    let newVal = input.value;
-    if (newVal === "" || isNaN(parseFloat(newVal.replace(',','.')))) {
-        alert("Inserisci un numero valido");
+    var newVal = input.value.replace(',', '.');
+
+    if (newVal === "" || isNaN(parseFloat(newVal))) {
+        input.classList.add('border-red-500', 'text-red-600');
+        input.focus();
         return;
     }
     
-    box.innerHTML = `<div class="text-xs text-gray-400 py-1">Salvataggio...</div>`;
+    // Feedback Caricamento (Spinner)
+    if(btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin text-sm"></i>';
+    }
 
     try {
-        const url = `${GOOGLE_SCRIPT_URL}?action=updateorder&row=${rowIndex}&amount=${newVal}&password=${encodeURIComponent(adminPassword)}`;
-        const res = await fetch(url);
-        const data = await res.json();
+        // Assicurati che GOOGLE_SCRIPT_URL e adminPassword siano definiti nel tuo file config o script
+        var url = GOOGLE_SCRIPT_URL + "?action=updateorder&row=" + rowIndex + "&amount=" + newVal + "&password=" + encodeURIComponent(adminPassword);
+        
+        var res = await fetch(url);
+        var data = await res.json();
         
         if (data.success) {
-            fetchOrders(); 
+            // Feedback Successo (Verde)
+            box.className = "flex items-center justify-center gap-2 bg-green-100 p-2 rounded-lg text-green-700 font-bold border border-green-200";
+            box.innerHTML = '<i class="fas fa-check-circle"></i> Salvato!';
+            
+            // Ricarica la tabella dopo breve attesa
+            setTimeout(function() { 
+                if(typeof fetchOrders === 'function') fetchOrders(); 
+            }, 500); 
         } else {
             alert("Errore: " + (data.message || data.error));
-            fetchOrders(); 
+            if(typeof fetchOrders === 'function') fetchOrders();
         }
     } catch (e) {
-        alert("Errore di connessione");
-        fetchOrders();
+        alert("Errore di connessione: " + e.message);
+        if(typeof fetchOrders === 'function') fetchOrders();
     }
 }
 
