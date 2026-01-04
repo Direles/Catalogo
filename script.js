@@ -517,15 +517,26 @@ async function triggerAction(actionName, btnElement) {
                 }
                 const byteArray = new Uint8Array(byteNumbers);
                 const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const blobUrl = window.URL.createObjectURL(blob);
 
-                // Creiamo un link invisibile e lo clicchiamo
-                const link = document.createElement('a');
-                link.href = window.URL.createObjectURL(blob);
-                link.download = json.name || "documento.pdf";
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            } 
+                // --- MODIFICA MOBILE ---
+                // Rileva se l'utente è su smartphone
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                    // Su mobile, forziamo l'apertura diretta del file
+                    // Questo aggira il blocco dei popup e mostra il PDF (o chiede di scaricarlo)
+                    window.location.href = blobUrl;
+                } else {
+                    // Su PC, manteniamo il download classico che non cambia pagina
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = json.name || "documento.pdf";
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                }
+            }
             // --- CASO 2: FALLBACK VECCHIO SISTEMA (URL) ---
             else if(json.url) { 
                 const link = document.createElement('a');
